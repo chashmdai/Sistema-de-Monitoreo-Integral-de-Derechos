@@ -7,6 +7,7 @@ import cl.smid.antecedentes.dominio.modelo.FichaAntecedente;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -167,7 +168,7 @@ public class MapeadorFicha {
         return altKeys;
     }
 
-    private static <T> void reemplazar(Set<T> destino, List<T> nuevos) {
+    private static <T> void reemplazar(Set<T> destino, Collection<T> nuevos) {
         destino.clear();
         destino.addAll(nuevos);
     }

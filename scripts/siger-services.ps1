@@ -111,6 +111,7 @@ function Get-ServiceCatalog {
             Tier        = $row.tier
             Port        = $row.port
             Optional    = [bool] $row.optional
+            AutoStart   = if ($row.PSObject.Properties['autoStart']) { [bool] $row.autoStart } else { -not [bool] $row.optional }
             StartLevel  = [int] $row.startLevel
             Db          = $row.db
             Directory   = $dir
@@ -142,7 +143,7 @@ function Resolve-SelectedServices {
         return @($catalog | Where-Object { $Tier -contains $_.Tier })
     }
 
-    return @($catalog | Where-Object { -not $_.Optional -or $IncludeOptional })
+    return @($catalog | Where-Object { $_.AutoStart -or $IncludeOptional })
 }
 
 # ----------------------------------------------------------------------------------
@@ -317,8 +318,16 @@ function Get-MavenArguments([object] $EffectiveConfig) {
 
 function Get-HealthStatus([string] $Url, [bool] $Alive) {
     if ($NoHttp -or -not $Alive) { return '' }
+    if ($Url -notmatch '/actuator/health') {
+        try {
+            $uri = [System.Uri] $Url
+            if (Test-LocalPortOpen $uri.Port) { return 'UP' }
+        } catch {
+            # continua con HTTP como fallback
+        }
+    }
     try {
-        $response = Invoke-RestMethod -Uri $Url -TimeoutSec 2
+        $response = Invoke-RestMethod -Uri $Url -TimeoutSec 5
         if ($null -ne $response.status) { return [string] $response.status }
         return 'HTTP OK'
     } catch {
@@ -516,9 +525,11 @@ function Start-SigerServices {
     foreach ($item in $state) { $stateByService[$item.service] = $item }
     $newState = [ref] @($state | Where-Object { Test-ProcessAlive ([int] $_.pid) })
 
-    # Arranque escalonado por startLevel; dentro de cada nivel se espera health UP
-    # antes de pasar al siguiente (a menos que -NoWait o -DryRun).
+    # Arranque escalonado por startLevel. Al terminar cada nivel se espera health UP,
+    # incluido el ultimo, para que el manager no marque la accion como lista antes de tiempo.
     $levels = @($selected | ForEach-Object StartLevel | Sort-Object -Unique)
+    $failedToStart = @()
+    $failedHealth = @()
     foreach ($level in $levels) {
         $batch = @($selected | Where-Object { $_.StartLevel -eq $level })
         Write-Host ''
@@ -526,16 +537,18 @@ function Start-SigerServices {
         $started = @()
         foreach ($spec in $batch) {
             if (Start-OneService $spec $logDir $stateByService $newState) { $started += $spec }
+            else { $failedToStart += $spec }
             Start-Sleep -Seconds $StartupDelaySeconds
         }
 
-        if (-not $DryRun -and -not $NoWait -and $started.Count -gt 0 -and $level -lt ($levels | Select-Object -Last 1)) {
+        if (-not $DryRun -and -not $NoWait -and $started.Count -gt 0) {
             foreach ($spec in $started) {
                 Write-Host "  esperando health UP de $($spec.Name)..." -NoNewline
                 if (Wait-ServiceHealthy $spec $HealthTimeoutSeconds) {
                     Write-Host ' UP' -ForegroundColor Green
                 } else {
                     Write-Host " sin UP en ${HealthTimeoutSeconds}s (sigo igual)" -ForegroundColor Yellow
+                    $failedHealth += $spec
                 }
             }
         }
@@ -545,6 +558,17 @@ function Start-SigerServices {
         Write-Host ''
         Write-Host "Logs: $logDir"
         Write-Host "Estado: $StateFile"
+    }
+
+    if (-not $DryRun -and ($failedToStart.Count -gt 0 -or $failedHealth.Count -gt 0)) {
+        $parts = @()
+        if ($failedToStart.Count -gt 0) {
+            $parts += "no arrancaron: $(($failedToStart | ForEach-Object Name) -join ', ')"
+        }
+        if ($failedHealth.Count -gt 0) {
+            $parts += "sin health UP: $(($failedHealth | ForEach-Object Name) -join ', ')"
+        }
+        throw "Arranque incompleto: $($parts -join '; ')"
     }
 }
 
@@ -696,9 +720,10 @@ function Invoke-Doctor {
         $envPath = Join-Path $dir '.env'
         if (-not (Test-Path -LiteralPath $envPath)) {
             $hasExample = Test-Path -LiteralPath (Join-Path $dir '.env.example')
-            $msg = if ($svc.optional) { 'opcional, sin .env' } else { 'falta .env' }
+            $autoStart = if ($svc.PSObject.Properties['autoStart']) { [bool] $svc.autoStart } else { -not [bool] $svc.optional }
+            $msg = if ($autoStart) { 'falta .env para arranque normal' } else { 'opcional, sin .env' }
             if ($hasExample) { $msg += ' (hay .env.example)' }
-            Add-Check "env: $($svc.name)" ($(if ($svc.optional) { 'AVISO' } else { 'FALTA' })) $msg
+            Add-Check "env: $($svc.name)" ($(if ($autoStart) { 'FALTA' } else { 'AVISO' })) $msg
             continue
         }
         $vars = Read-DotEnv $envPath

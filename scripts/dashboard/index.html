@@ -100,7 +100,7 @@ requerimientos
           <option value="512m">512m</option>
         </select>
       </label>
-      <label class="check"><input id="include-optional" type="checkbox"> incluir opcionales</label>
+      <label class="check"><input id="include-optional" type="checkbox"> incluir experimentales</label>
       <label class="check"><input id="use-example-env" type="checkbox"> permitir .env.example</label>
     </div>
     <div class="control-actions">
@@ -109,7 +109,8 @@ requerimientos
       <button id="restart-all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Reiniciar</button>
     </div>
   </section>
-  <p class="hint">Los heaps y el perfil se aplican al levantar/reiniciar; no cambian un JVM ya corriendo. «Levantar todo» respeta el orden de arranque por niveles.</p>
+  <div id="action-status" class="action-status" hidden></div>
+  <p class="hint">«Levantar todo» inicia el ecosistema operativo: base, SMID Core, ESNNA, SGS, Gateway y frontend. El check agrega servicios opcionales que siguen en laboratorio.</p>
 
   <main class="layout">
     <section class="services">

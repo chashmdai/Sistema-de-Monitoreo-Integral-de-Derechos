@@ -29,8 +29,9 @@ Para apagarlo si quedó en background: `.\scripts\siger-services.ps1 dashboard-s
 - **Diagnóstico ("Doctor")**: verifica Java/Maven/PowerShell, infra, presencia de `.env` y
   **coherencia del `JWT_SECRET`** entre todos los servicios (maneja alias como
   `JWT_SECRET` / `JWT_SECRET_ACTIVO`).
-- **Control**: levantar/apagar/reiniciar por servicio o global. «Levantar todo» respeta el
-  **orden de arranque por niveles** (infra → núcleo → gateway) con espera de `health UP`.
+- **Control**: levantar/apagar/reiniciar por servicio o global. «Levantar todo» inicia el
+  **ecosistema operativo** (`autoStart=true`): base, SMID Core, ESNNA, SGS, Gateway y frontend;
+  el checkbox suma servicios opcionales/experimentales. El panel sigue la acción hasta que termina.
 - **Visor de logs**: stdout/stderr, resaltado de ERROR/WARN/INFO, búsqueda con realce,
   **modo en vivo (SSE)**, wrap on/off.
 - **Obtener token**: hace login con el usuario semilla y te copia el Bearer para probar
@@ -57,10 +58,10 @@ por eso cada servicio con Lombok declara `annotationProcessorPaths` en su `pom.x
 ## Control por línea de comandos
 
 ```powershell
-.\scripts\siger-services.ps1 start                       # todo, por niveles, esperando health
+.\scripts\siger-services.ps1 start                       # stack operativo, por niveles, esperando health
 .\scripts\siger-services.ps1 start -Services casos-service
 .\scripts\siger-services.ps1 start -Tier nucleo
-.\scripts\siger-services.ps1 start -IncludeOptional      # incluye instituciones-service
+.\scripts\siger-services.ps1 start -IncludeOptional      # suma opcionales experimentales/no afinados
 .\scripts\siger-services.ps1 start -NoWait               # sin esperar health entre niveles
 .\scripts\siger-services.ps1 stop                        # o -Services / -Tier
 .\scripts\siger-services.ps1 restart

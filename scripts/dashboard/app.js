@@ -18,10 +18,14 @@ const state = {
   busy: false,
   timer: null,
   actionTimer: null,
+  actionPollTimer: null,
+  currentActionId: null,
   eventSource: null,
 };
 
 const LABELS = { up: 'UP', warning: 'REVISAR', starting: 'INICIANDO', untracked: 'HUÉRFANO', down: 'DOWN' };
+const ACTION_LABELS = { start: 'Levantar', stop: 'Apagar', restart: 'Reiniciar' };
+const ACTION_STATUS = { queued: 'en cola', running: 'ejecutando', succeeded: 'completado', failed: 'falló' };
 
 /* ---------- utilidades ---------- */
 function escapeHtml(s) {
@@ -79,6 +83,7 @@ function cardHtml(svc) {
   const stats = svc.logStats || {};
   const errChip = stats.errors ? `<span class="chip err">E ${stats.errors}</span>` : '';
   const warnChip = stats.warnings ? `<span class="chip warn">W ${stats.warnings}</span>` : '';
+  const autoChip = svc.optional && svc.autoStart ? '<span class="chip">auto</span>' : '';
   return `<article class="card ${svc.overall} ${svc.name === state.selected ? 'selected' : ''}" data-svc="${svc.name}">
     <div class="card-top">
       <span class="dot"></span>
@@ -90,7 +95,7 @@ function cardHtml(svc) {
       <span class="chip">:${svc.port}</span>
       <span class="chip">${escapeHtml(svc.health)}</span>
       <span class="chip">${fmtMem(svc.memoryMb)}</span>
-      ${errChip}${warnChip}
+      ${autoChip}${errChip}${warnChip}
     </div>
   </article>`;
 }
@@ -273,6 +278,77 @@ async function refresh() {
 function setButtons(enabled) {
   for (const id of ['start-all', 'stop-all', 'restart-all', 'svc-start', 'svc-stop', 'svc-restart']) $(id).disabled = !enabled;
 }
+
+function actionScope(action) {
+  if (!action) return 'ecosistema';
+  if (action.services && action.services.length) return action.services.join(', ');
+  if (action.tiers && action.tiers.length) return `tier ${action.tiers.join(', ')}`;
+  return action.options?.includeOptional ? 'ecosistema completo + experimentales' : 'ecosistema operativo';
+}
+
+function renderActionStatus(action) {
+  const el = $('action-status');
+  if (!el || !action) return;
+  const status = action.status || 'queued';
+  const label = ACTION_LABELS[action.action] || action.action;
+  const tail = (action.logTail || []).slice(-8).map(escapeHtml).join('\n');
+  el.hidden = false;
+  el.className = `action-status ${escapeHtml(status)}`;
+  el.innerHTML = `
+    <div class="action-main">
+      <span class="dot"></span>
+      <div>
+        <strong>${escapeHtml(label)} · ${escapeHtml(actionScope(action))}</strong>
+        <span>${escapeHtml(ACTION_STATUS[status] || status)}${action.exitCode !== null && action.exitCode !== undefined ? ` · exit ${action.exitCode}` : ''}</span>
+      </div>
+    </div>
+    ${tail ? `<pre>${tail}</pre>` : ''}`;
+}
+
+function clearActionPoll() {
+  if (state.actionPollTimer) clearInterval(state.actionPollTimer);
+  state.actionPollTimer = null;
+  state.currentActionId = null;
+}
+
+function finishAction(action) {
+  clearActionPoll();
+  state.busy = false;
+  setButtons(true);
+  refresh();
+  toast(action.status === 'succeeded' ? 'Acción completada' : 'Acción con errores; revisa la banda de progreso');
+}
+
+function watchAction(action) {
+  state.currentActionId = action.id;
+  state.busy = true;
+  setButtons(false);
+  renderActionStatus(action);
+
+  let polling = false;
+  const tick = async () => {
+    if (polling || !state.currentActionId) return;
+    polling = true;
+    try {
+      const r = await fetch(`/api/actions?id=${encodeURIComponent(state.currentActionId)}`, { cache: 'no-store' });
+      const data = await r.json();
+      const latest = (data.actions || [])[0];
+      if (latest) {
+        renderActionStatus(latest);
+        await refresh();
+        if (latest.status === 'succeeded' || latest.status === 'failed') finishAction(latest);
+      }
+    } catch (e) {
+      toast(`No pude leer la acción: ${e.message}`);
+    } finally {
+      polling = false;
+    }
+  };
+
+  state.actionPollTimer = setInterval(tick, 2500);
+  tick();
+}
+
 async function runAction(action, services = []) {
   if (state.busy) return;
   state.busy = true; setButtons(false);
@@ -282,10 +358,9 @@ async function runAction(action, services = []) {
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'No se pudo ejecutar la acción.');
     toast(`Acción «${action}» enviada${services.length ? ` (${services.join(', ')})` : ''}`);
-    setTimeout(refresh, 1200);
+    watchAction(data.action);
   } catch (e) {
     toast(e.message);
-  } finally {
     state.busy = false; setButtons(true);
   }
 }
@@ -473,9 +548,13 @@ function bind() {
     if (want && valid.includes(want)) $(id).value = want; // ignora valores viejos inválidos
     $(id).addEventListener('change', () => LS.set('field.' + id, $(id).value));
   }
-  for (const id of ['include-optional', 'use-example-env']) {
-    $(id).checked = LS.get('field.' + id, false);
-    $(id).addEventListener('change', () => LS.set('field.' + id, $(id).checked));
+  const checkPrefs = {
+    'include-optional': 'include-experimental',
+    'use-example-env': 'use-example-env',
+  };
+  for (const [id, key] of Object.entries(checkPrefs)) {
+    $(id).checked = LS.get('field.' + key, false);
+    $(id).addEventListener('change', () => LS.set('field.' + key, $(id).checked));
   }
 }
 

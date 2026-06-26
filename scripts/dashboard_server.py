@@ -103,6 +103,10 @@ def service_names() -> set[str]:
     return {s["name"] for s in services()}
 
 
+def service_auto_start(spec: dict[str, Any]) -> bool:
+    return bool(spec.get("autoStart", not bool(spec.get("optional"))))
+
+
 # ---------------------------------------------------------------------------
 # Estado de procesos
 # ---------------------------------------------------------------------------
@@ -195,7 +199,7 @@ def read_health(url: str, has_port: bool) -> dict[str, Any]:
     if not has_port:
         return {"health": "NO_RESPONSE", "detail": "Puerto cerrado"}
     try:
-        with urllib.request.urlopen(url, timeout=0.9) as response:
+        with urllib.request.urlopen(url, timeout=3.0) as response:
             raw = response.read(32768).decode("utf-8", errors="replace")
             try:
                 payload = json.loads(raw)
@@ -348,6 +352,8 @@ def inspect_service(spec: dict[str, Any], state: dict[str, Any] | None) -> dict[
     proc = process_info(pid)
     has_port = port_open("127.0.0.1", port)
     kind = spec.get("kind", "java")
+    optional = bool(spec.get("optional"))
+    auto_start = service_auto_start(spec)
 
     if kind == "web":
         # Un frontend 'web' (Vite) no tiene /actuator/health: su salud es el puerto.
@@ -372,7 +378,8 @@ def inspect_service(spec: dict[str, Any], state: dict[str, Any] | None) -> dict[
         "kind": kind,
         "url": spec.get("url", ""),
         "port": port,
-        "optional": bool(spec.get("optional")),
+        "optional": optional,
+        "autoStart": auto_start,
         "startLevel": spec.get("startLevel"),
         "gatewayRoute": spec.get("gatewayRoute", ""),
         "db": spec.get("db"),
@@ -490,10 +497,11 @@ def doctor_payload() -> dict[str, Any]:
         if not env_path.exists():
             example = (service_dir(spec["name"], catalog) / ".env.example").exists()
             optional = bool(spec.get("optional"))
-            msg = "opcional, sin .env" if optional else "falta .env"
+            auto_start = service_auto_start(spec)
+            msg = "falta .env para arranque normal" if auto_start else "opcional, sin .env"
             if example:
                 msg += " (hay .env.example)"
-            add(f"env: {spec['name']}", "warn" if optional else "fail", msg)
+            add(f"env: {spec['name']}", "fail" if auto_start else "warn", msg)
             continue
         vars = parse_dotenv(env_path)
         secret = env_active_value(vars, jwt_cfg.get("secretVars", ["JWT_SECRET"]))

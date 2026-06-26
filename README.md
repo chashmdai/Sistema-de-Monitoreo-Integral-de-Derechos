@@ -28,6 +28,7 @@ opera con una herramienta local **sin dependencias** (Python + PowerShell) con d
 9. [Perfiles y variables de entorno](#9-perfiles-y-variables-de-entorno)
 10. [Repositorios independientes](#10-repositorios-independientes)
 11. [Documentación por componente](#11-documentación-por-componente)
+12. [Troubleshooting operativo](#12-troubleshooting-operativo)
 
 ---
 
@@ -73,12 +74,15 @@ Fuente única de verdad: [`scripts/services.json`](scripts/services.json).
 | Núcleo | **productos-service** | 6.6 | 8092 | `/api/productos` | `db_productos` | Productos y tareas del caso |
 | Núcleo | **antecedentes-service** | 6.8 | 8094 | `/api/antecedentes` | `db_antecedentes` | Antecedentes y hallazgos *(opcional)* |
 | Referencia | **instituciones-service** | 6.10 | 8093 | `/api/instituciones` | `db_instituciones` | Catálogo nacional de instituciones *(opcional)* |
-| Legado SMID | **smid-service** | — | 8085 | `/api/smid` | `smid_db` | Core legado: requerimientos SMID, evaluaciones, oficios, legislativo y reportes *(opcional)* |
-| Legado IA | **esnna-service** | — | 8086 | `/api/esnna` | `db_esnna` | Motor IA de casos ESNNA *(opcional)* |
-| Legado IA | **sgs-service** | — | 8083 | `/api/sgs` | `db_sgs` | Gestión y seguimiento con IA *(opcional)* |
-| Frontend | **frontend-smid** | — | 3000 | (proxy `/api`) | — | SPA Vite/React *(opcional)* |
+| Legado SMID | **smid-service** | — | 8085 | `/api/smid` | `smid_db` | Core legado: requerimientos SMID, evaluaciones, oficios, legislativo y reportes *(autoStart)* |
+| Legado IA | **esnna-service** | — | 8086 | `/api/esnna` | `db_esnna` | Motor IA de casos ESNNA *(autoStart)* |
+| Legado IA | **sgs-service** | — | 8083 | `/api/sgs` | `db_sgs` | Gestión y seguimiento con IA *(autoStart)* |
+| Frontend | **frontend-smid** | — | 3000 | (proxy `/api`) | — | SPA Vite/React *(autoStart)* |
 
 Infraestructura: **MySQL 8** (`:3306`, una BD por servicio) y **RabbitMQ** (`:5672`, mgmt `:15672`).
+El botón/CLI **Levantar todo** usa `autoStart=true`: levanta el stack operativo completo y deja fuera
+solo los experimentales (`antecedentes-service`, `instituciones-service`) salvo que se pida
+`-IncludeOptional`.
 
 ---
 
@@ -141,23 +145,46 @@ SIGER/
 Cada servicio arranca con su base creada y **vacía** (Flyway crea el esquema). Los secretos se
 proveen por `.env` (nunca versionado); ver `.env.example` de cada servicio.
 
+Checklist para una máquina nueva:
+
+1. Clonar este repo y abrir PowerShell en la raíz (`SIGER/`).
+2. Confirmar JDK 21: `.\scripts\siger-services.ps1 doctor`.
+3. Levantar MySQL y RabbitMQ antes de arrancar servicios.
+4. Crear/copiar los `.env` desde `.env.example` en los servicios que se van a usar.
+5. Verificar que todos los `.env` compartan el mismo `JWT_SECRET`.
+6. Ejecutar `.\scripts\siger-services.ps1 start` o usar el dashboard.
+
+Bases de datos esperadas en local: `db_auth`, `db_catalogo`, `db_personas`,
+`db_requerimientos`, `db_casos`, `db_vulneraciones`, `db_productos`, `smid_db`,
+`db_esnna`, `db_sgs`. Para opcionales experimentales: `db_antecedentes`,
+`db_instituciones`.
+
 ### 5.2 Arranque rápido
 
 ```powershell
 # 1) Panel de control (abre http://127.0.0.1:8765)
 .\Abrir SIGER Dashboard.bat        # o:  python .\scripts\dashboard_server.py
 
-# 2) Levantar todo por niveles (infra → núcleo → gateway), esperando health UP
+# 2) Levantar el stack operativo por niveles, esperando health UP
+#    Incluye base + SMID Core + ESNNA + SGS + Gateway + frontend
 .\scripts\siger-services.ps1 start
 
-# 3) Frontend (instala deps la 1ª vez, npm run dev y abre el navegador)
-.\scripts\siger-services.ps1 start -Services frontend-smid
-
-# 4) Incluir los opcionales (instituciones, esnna, sgs, frontend)
+# 3) Agregar opcionales experimentales/no afinados
 .\scripts\siger-services.ps1 start -IncludeOptional
 ```
 
 Credenciales semilla (perfil `local`/`dev`): `admin@defensorianinez.cl` / `Smid.Local.2026`.
+
+Comprobación rápida después del arranque:
+
+```powershell
+.\scripts\siger-services.ps1 status
+Invoke-RestMethod http://localhost:8080/actuator/health
+```
+
+Resultado esperado del stack operativo: `smid-auth`, `catalogo`, `personas`, `requerimientos`,
+`casos`, `vulneraciones`, `productos`, `smid-service`, `esnna-service`, `sgs-service`, Gateway y
+frontend en `UP`. Los experimentales pueden quedar `down` si no se levantaron explícitamente.
 
 ---
 
@@ -176,7 +203,19 @@ prueba y correr un **diagnóstico (Doctor)**. Soporta servicios Java (Maven) y *
 ```
 
 **Agregar un servicio** = agregar una entrada en `scripts/services.json` (Java: `kind` omitido;
-frontend: `"kind":"web"` con `path`, `command`, `url`). El runner y el dashboard lo toman solos.
+frontend: `"kind":"web"` con `path`, `command`, `url`). Si debe entrar en «Levantar todo»,
+marcar `"autoStart": true`; si queda en laboratorio, dejarlo opcional. El runner y el dashboard lo
+toman solos.
+
+Comandos útiles:
+
+```powershell
+.\scripts\siger-services.ps1 start                       # stack operativo
+.\scripts\siger-services.ps1 start -IncludeOptional      # suma experimentales
+.\scripts\siger-services.ps1 restart -Services sgs-service
+.\scripts\siger-services.ps1 logs -Services smid-auth -Follow
+.\scripts\siger-services.ps1 dashboard-stop
+```
 
 ---
 
@@ -214,10 +253,18 @@ frontend: `"kind":"web"` con `path`, `command`, `url`). El runner y el dashboard
 
 ## 10. Repositorios independientes
 
-Cada servicio de SIGER mantiene **su propio repositorio Git** (los `services/*/.git` no se aplanan).
 Este árbol es el **monorepo de integración**: reúne servicios, frontends, el gestor y la
-documentación para operarlos como un solo ecosistema. La estrategia del repo padre (submódulos vs.
-meta-repo que versiona solo el *pegamento*) se define al publicar.
+documentación para operarlos como un solo ecosistema. Si una carpeta de servicio conserva su `.git`
+local, trátalo como repositorio de trabajo independiente; para publicar el integrador en GitHub se
+versiona el contenido desde el repo padre sin subir `.env`, `target/`, `node_modules/` ni logs.
+
+Antes de empujar cambios:
+
+```powershell
+git status --short
+git diff --check
+.\scripts\siger-services.ps1 doctor
+```
 
 ---
 
@@ -234,6 +281,26 @@ meta-repo que versiona solo el *pegamento*) se define al publicar.
 | SGS (legado IA) | [`services/sgs-service/README.md`](services/sgs-service/README.md) |
 | Frontend SMID | [`frontends/smid/README.md`](frontends/smid/README.md) |
 | Identidad visual | [`assets/brand/README.md`](assets/brand/README.md) |
+
+---
+
+## 12. Troubleshooting operativo
+
+| Síntoma | Revisión rápida | Corrección típica |
+|---|---|---|
+| `doctor` marca MySQL o RabbitMQ caído | Puertos `3306`, `5672`, `15672` | Levantar servicios de infraestructura antes del stack |
+| Login falla con 401 | `JWT_SECRET` distinto o auth sin semilla | Ejecutar Doctor y revisar `.env` de `smid-auth` |
+| Gateway `UP` pero rutas `/api/*` fallan | Servicio destino caído o sin health | `.\scripts\siger-services.ps1 status` y logs del servicio |
+| Dashboard no abre | Puerto `8765` ocupado o proceso colgado | `.\scripts\siger-services.ps1 dashboard-stop` y volver a abrir |
+| Frontend sin respuesta | Puerto `3000` ocupado o Vite iniciando | Revisar logs de `frontend-smid`; el primer `npm install` tarda |
+| `Levantar todo` parece lento | El runner espera `health UP` por nivel | Esperar la banda de progreso del dashboard o revisar logs |
+
+Logs importantes:
+
+- Estado de procesos: `_runtime-logs/siger-services.json`
+- Logs por corrida: `_runtime-logs/<timestamp>/`
+- Acciones del dashboard: `_runtime-logs/dashboard-actions/`
+- E2E: `_runtime-logs/e2e/<runId>/`
 
 ---
 
