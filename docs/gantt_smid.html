@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carta Gantt · Programa SMID — Defensoría de los Derechos de la Niñez</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['Sora', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+      },
+      colors: {
+        ink: { 950:'#070D19', 900:'#0B1322', 850:'#0E1830', 800:'#13203A', 700:'#1B2C4E' },
+        inst: { 400:'#60A5FA', 500:'#3B82F6', 600:'#2563EB', 700:'#1D4ED8' },
+      },
+      boxShadow: {
+        glow: '0 0 0 1px rgba(96,165,250,.25), 0 8px 30px -10px rgba(37,99,235,.45)',
+      }
+    }
+  }
+}
+</script>
+<style>
+  :root { color-scheme: dark; }
+  body { background:
+      radial-gradient(1200px 600px at 85% -10%, rgba(37,99,235,.16), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(16,185,129,.07), transparent 55%),
+      #0B1322;
+  }
+  .blueprint {
+    background-image:
+      linear-gradient(rgba(148,163,184,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .bar { transform-origin: left center; transform: scaleX(0); transition: transform .8s cubic-bezier(.22,.9,.26,1); }
+  .bar.in { transform: scaleX(1); }
+  .diamond { transform: rotate(45deg); }
+  @keyframes pulseDot { 0%,100%{ box-shadow:0 0 0 0 rgba(245,158,11,.55);} 50%{ box-shadow:0 0 0 9px rgba(245,158,11,0);} }
+  .pulse-amber { animation: pulseDot 2.2s ease-out infinite; }
+  @keyframes todayBeam { 0%,100%{opacity:.85} 50%{opacity:.45} }
+  .today-line { animation: todayBeam 3.2s ease-in-out infinite; }
+  ::-webkit-scrollbar { height: 10px; width: 10px; }
+  ::-webkit-scrollbar-track { background: #0E1830; border-radius: 8px; }
+  ::-webkit-scrollbar-thumb { background: #1B2C4E; border-radius: 8px; border: 2px solid #0E1830; }
+  ::-webkit-scrollbar-thumb:hover { background: #2563EB; }
+  .row-hover:hover .lbl, .row-hover:focus-within .lbl { color: #E2E8F0; }
+  .row-hover:hover, .row-hover:focus-within { background: rgba(59,130,246,.05); }
+  @media (prefers-reduced-motion: reduce) {
+    .bar { transition: none; transform: scaleX(1); }
+    .pulse-amber, .today-line { animation: none; }
+  }
+</style>
+</head>
+<body class="text-slate-300 font-sans antialiased min-h-screen">
+
+<main class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-10 py-10">
+
+  <!-- ============ ENCABEZADO ============ -->
+  <header class="mb-8">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <p class="font-mono text-[11px] tracking-[.22em] text-inst-400 uppercase">Defensoría de los Derechos de la Niñez · República de Chile</p>
+      <span class="font-mono text-[11px] px-3 py-1 rounded-full border border-rose-500/40 text-rose-300 bg-rose-500/10 tracking-widest">RESERVADO · GESTIÓN INTERNA</span>
+    </div>
+
+    <div class="mt-4 flex flex-wrap items-end justify-between gap-6">
+      <div>
+        <h1 class="font-display font-800 font-extrabold text-3xl sm:text-[2.6rem] leading-tight text-slate-100">
+          Bitácora Gantt · <span class="text-transparent bg-clip-text bg-gradient-to-r from-inst-400 to-emerald-300">Programa SMID</span>
+        </h1>
+        <p class="mt-2 max-w-2xl text-sm text-slate-400">
+          Registro cronológico de la práctica profesional: de la <span class="text-slate-200">auditoría forense del legado SIGER</span> al
+          <span class="text-slate-200">compromiso del MVP fundacional</span>. Tres fases probadas a la izquierda de la línea HOY; una fase comprometida a su derecha.
+        </p>
+      </div>
+      <div class="text-right">
+        <p class="font-mono text-xs text-slate-500">Ejecuta · Desarrollo Institucional</p>
+        <p class="font-display font-semibold text-slate-200">Benjamín Torrejón</p>
+        <p class="font-mono text-xs text-slate-500 mt-1">20 ABR — 15 JUL 2026 · 12 semanas · 87 días</p>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="rounded-xl bg-ink-850/80 ring-1 ring-white/10 px-5 py-4">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-slate-500">Avance global ponderado</p>
+        <p class="font-display text-3xl font-bold text-slate-100 mt-1"><span id="kpiGlobal">—</span><span class="text-base text-slate-500">%</span></p>
+        <div class="mt-2 h-1.5 rounded-full bg-ink-700 overflow-hidden"><div id="kpiGlobalBar" class="h-full bg-gradient-to-r from-inst-500 to-emerald-400" style="width:0%"></div></div>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 ring-1 ring-white/10 px-5 py-4">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-slate-500">Fases cerradas</p>
+        <p class="font-display text-3xl font-bold text-emerald-300 mt-1">3<span class="text-base text-slate-500"> / 4</span></p>
+        <p class="font-mono text-[11px] text-slate-500 mt-2">F1 · F2 · F3 verificadas al 100%</p>
+      </div>
+      <div class="rounded-xl bg-ink-850/80 ring-1 ring-white/10 px-5 py-4">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-slate-500">Tareas e hitos</p>
+        <p class="font-display text-3xl font-bold text-slate-100 mt-1"><span id="kpiDone">—</span><span class="text-base text-slate-500"> / <span id="kpiTotal">—</span></span></p>
+        <p class="font-mono text-[11px] text-slate-500 mt-2">incluye 1 pivote crítico logrado</p>
+      </div>
+      <div class="rounded-xl bg-amber-500/10 ring-1 ring-amber-400/30 px-5 py-4">
+        <p class="font-mono text-[11px] uppercase tracking-widest text-amber-300/80">Días al hito final</p>
+        <p class="font-display text-3xl font-bold text-amber-300 mt-1"><span id="kpiDays">—</span><span class="text-base text-amber-200/60"> días</span></p>
+        <p class="font-mono text-[11px] text-amber-200/60 mt-2">cierre y traspaso · 15 JUL 2026</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ TARJETA GANTT ============ -->
+  <section class="rounded-2xl bg-ink-900/80 ring-1 ring-white/10 shadow-glow overflow-hidden">
+
+    <!-- Leyenda -->
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 sm:px-7 py-4 border-b border-white/10 bg-ink-850/60">
+      <span class="font-mono text-[11px] uppercase tracking-widest text-slate-500 mr-1">Leyenda</span>
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400"><i class="w-6 h-2.5 rounded-sm bg-gradient-to-r from-inst-700 to-inst-500 inline-block"></i> Tarea ejecutada</span>
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400"><i class="w-6 h-2.5 rounded-sm bg-emerald-400/90 inline-block"></i> Relleno de progreso</span>
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400"><i class="w-6 h-2.5 rounded-sm border border-amber-400/70 bg-amber-400/15 inline-block"></i> Tarea comprometida (0%)</span>
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400"><i class="w-2.5 h-2.5 diamond bg-emerald-400 inline-block"></i> Hito logrado</span>
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400"><i class="w-2.5 h-2.5 diamond bg-rose-400 inline-block"></i> Pivote crítico</span>
+      <span class="inline-flex items-center gap-2 text-xs text-slate-400"><i class="w-2.5 h-2.5 diamond bg-amber-400 pulse-amber inline-block"></i> Hito comprometido</span>
+      <span class="inline-flex items-center gap-2 text-xs text-amber-300"><i class="w-px h-3.5 bg-amber-400 inline-block"></i> Línea HOY · 11 JUN</span>
+    </div>
+
+    <!-- Lienzo con scroll horizontal -->
+    <div class="overflow-x-auto">
+      <div class="min-w-[1180px]">
+
+        <!-- Encabezado temporal -->
+        <div class="grid" style="grid-template-columns: 264px 1fr;">
+          <div class="sticky left-0 z-30 bg-ink-900/95 backdrop-blur border-r border-white/10 px-5 py-3">
+            <p class="font-mono text-[11px] uppercase tracking-widest text-slate-500">Fase / Actividad</p>
+          </div>
+          <div>
+            <div id="rowMonths" class="flex border-b border-white/10"></div>
+            <div id="rowWeeks" class="flex border-b border-white/10 bg-ink-850/40"></div>
+          </div>
+        </div>
+
+        <!-- Cuerpo del gráfico -->
+        <div id="chart" class="relative">
+          <!-- capa de grilla + línea HOY (se inyecta por JS, offset 264px) -->
+          <div id="gridLayer" class="absolute top-0 bottom-0 pointer-events-none blueprint" style="left:264px; right:0;"></div>
+          <div id="rows" class="relative z-10"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Pie de tarjeta -->
+    <div class="px-5 sm:px-7 py-4 border-t border-white/10 bg-ink-850/60 flex flex-wrap items-center justify-between gap-3">
+      <p class="font-mono text-[11px] text-slate-500">Ref.: Informe Técnico-Jurídico-Administrativo «Obsolescencia de SIGER y Consolidación de la Nueva Arquitectura Institucional» v1.0 · Minutas Directivas N° 1–3 (10-06-2026)</p>
+      <p class="font-mono text-[11px] text-slate-500">Fechas ancla institucionales → acreditación ≤ <span class="text-slate-300">01-11</span> · go/no-go <span class="text-slate-300">15-12</span> · congelamiento <span class="text-slate-300">31-12</span> · operación oficial <span class="text-emerald-300">01-01-2027</span></p>
+    </div>
+  </section>
+
+  <footer class="mt-6 flex flex-wrap items-center justify-between gap-2">
+    <p class="font-mono text-[11px] text-slate-600">gantt_smid.html · documento de gestión · estándar DAA (G1–G10)</p>
+    <p class="font-mono text-[11px] text-slate-600">El conocimiento queda en casa: documentación exhaustiva como activo de primera clase.</p>
+  </footer>
+</main>
+
+<!-- Tooltip flotante -->
+<div id="tip" class="fixed z-50 hidden max-w-xs rounded-xl bg-ink-800/95 backdrop-blur ring-1 ring-inst-400/30 shadow-2xl px-4 py-3 pointer-events-none">
+  <p id="tipTitle" class="font-display font-semibold text-sm text-slate-100"></p>
+  <p id="tipDates" class="font-mono text-[11px] text-inst-400 mt-0.5"></p>
+  <p id="tipDesc" class="text-xs text-slate-400 mt-1.5 leading-relaxed"></p>
+  <div id="tipProgWrap" class="mt-2.5 flex items-center gap-2">
+    <div class="flex-1 h-1.5 rounded-full bg-ink-700 overflow-hidden"><div id="tipProg" class="h-full bg-emerald-400"></div></div>
+    <span id="tipPct" class="font-mono text-[11px] text-slate-300"></span>
+  </div>
+</div>
+
+<script>
+/* ================= Datos del cronograma ================= */
+const START = new Date('2026-04-20T00:00:00');
+const TOTAL = 87;                       // 20-abr → 15-jul inclusive
+const TODAY = '2026-06-11';
+
+const dIdx = s => Math.round((new Date(s + 'T00:00:00') - START) / 864e5);
+const pctL = s => (dIdx(s) / TOTAL * 100);
+const pctW = (s, e) => ((dIdx(e) - dIdx(s) + 1) / TOTAL * 100);
+const fmt  = s => { const d = new Date(s + 'T00:00:00');
+  return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }).replace('.', ''); };
+
+const MONTHS = [['Abril', 11], ['Mayo', 31], ['Junio', 30], ['Julio', 15]];
+
+const PHASES = [
+  {
+    id: 'F1', name: 'Auditoría Forense y Diagnóstico del Legado',
+    range: ['2026-04-20', '2026-05-10'], status: 'done',
+    items: [
+      { t: 'task', name: 'Onboarding institucional y alineación con Sedes Regionales', s: '2026-04-20', e: '2026-04-24', p: 100,
+        d: 'Inducción, accesos y levantamiento de la realidad operativa territorial de las cuatro Unidades de Destino.' },
+      { t: 'task', name: 'Auditoría de caja negra de SIGER (acoplamiento · framesets · IDOR)', s: '2026-04-22', e: '2026-05-08', p: 100,
+        d: 'Inspección del comportamiento observable: acoplamiento UI–datos, presentación por framesets y vulnerabilidad de acceso cruzado entre sedes (IDOR).' },
+      { t: 'task', name: 'Levantamiento del esquema físico de BD en QA (MyISAM · latin1)', s: '2026-04-27', e: '2026-05-10', p: 100,
+        d: 'Verificación reproducible del volcado: 122 tablas, 73% MyISAM sin transaccionalidad, codificación latin1 en la totalidad.' },
+    ]
+  },
+  {
+    id: 'F2', name: 'Cimientos de la Arquitectura Distribuida', note: 'en paralelo con el cierre de la auditoría',
+    range: ['2026-05-04', '2026-05-31'], status: 'done',
+    items: [
+      { t: 'task', name: 'API Gateway — orquestación, filtros de auditoría y CORS', s: '2026-05-04', e: '2026-05-15', p: 100,
+        d: 'Punto único de entrada del clúster: auditoría de tráfico, validación de credenciales y normalización de errores.' },
+      { t: 'task', name: 'Auth Service — jerarquía Sede → Unidad → Profesional · BCrypt · JWT', s: '2026-05-11', e: '2026-05-22', p: 100,
+        d: 'Identidad territorial: cada credencial nace acotada a su sede y unidad; respuesta antienumeración y hashing BCrypt.' },
+      { t: 'task', name: 'SGS v2 — procesamiento asíncrono y desdoble algorítmico', s: '2026-05-14', e: '2026-05-29', p: 100,
+        d: 'Seguimiento Oficio → Recomendación → Acción: colas asíncronas, propuesta algorítmica inmutable y veredicto humano registrado.' },
+      { t: 'task', name: 'ESNNA v2 — reglas deterministas de priorización y semáforos inmutables', s: '2026-05-18', e: '2026-05-31', p: 100,
+        d: 'El semáforo lo computa la regla institucional sobre la evidencia extraída; auditoría de modelos, hashes, tokens y costo.' },
+    ]
+  },
+  {
+    id: 'F3', name: 'Persistencia, Gestión del Riesgo y Alineación Estratégica',
+    range: ['2026-06-01', '2026-06-10'], status: 'done',
+    items: [
+      { t: 'task', name: 'Pruebas de estrés de migración masiva (ETL latin1 → utf8mb4)', s: '2026-06-01', e: '2026-06-05', p: 100,
+        d: 'Ensayo de transcodificación del corpus histórico sobre motores sin reversa atómica: el resultado redefine la estrategia.' },
+      { t: 'mile', kind: 'pivot', name: 'PIVOTE CRÍTICO — riesgo de corrupción de relatos: se descarta la migración total directa', s: '2026-06-05',
+        d: 'Hallazgo decisivo: la conversión masiva amenaza la integridad física de relatos confidenciales de NNA. Nace la estrategia de dos horizontes y la migración selectiva del padrón.' },
+      { t: 'task', name: 'Diseño conceptual del Proxy de Anonimización + nodo local de IA', s: '2026-06-04', e: '2026-06-09', p: 100,
+        d: 'Supuesto cualitativo de inversión futura: seudonimización previa a todo modelo externo e inferencia local en nodo dedicado e independiente.' },
+      { t: 'task', name: 'Informe Técnico-Jurídico v1.0 + Trilogía de Minutas Directivas', s: '2026-06-06', e: '2026-06-10', p: 100,
+        d: '55 páginas, 16 capítulos, 5 anexos; subsunción normativa (Leyes 21.067 · 21.430 · 21.719 · 18.575) y tres minutas de 2 páginas para jefaturas.' },
+      { t: 'mile', kind: 'done', name: 'Entrega del expediente estratégico (Informe v1.0 · Minutas 1–3)', s: '2026-06-10',
+        d: 'La evidencia técnica y la palanca legal quedan en manos de Dirección Nacional, Fiscalía, A&F, Auditoría Interna y regiones.' },
+    ]
+  },
+  {
+    id: 'F4', name: 'Desarrollo del MVP Fundacional Comprometido', note: 'inicia hoy · 34 días',
+    range: ['2026-06-11', '2026-07-15'], status: 'next',
+    items: [
+      { t: 'task', name: 'F0/F1 — validación funcional y diseño de esquemas independientes', s: '2026-06-11', e: '2026-06-19', p: 0,
+        d: 'Acta de reglas vigentes con usuarias/os líderes, acta de volúmenes con huella SHA-256 y esquemas de las bases del MVP.' },
+      { t: 'task', name: 'Servicio 6.1 — Identidad y Acceso (cierre P0 · externalización de secretos)', s: '2026-06-22', e: '2026-07-03', p: 0,
+        d: 'Endurecimiento inmediato: secretos a entorno/gestor, validación de emisor y audiencia, autorización por roles activa.' },
+      { t: 'task', name: 'Servicio 6.2 — Registro Maestro de Personas (ETL del padrón · cadena de custodia)', s: '2026-06-24', e: '2026-07-07', p: 0,
+        d: 'Traslado selectivo de ~27.000 registros estructurados: acta, verificación de integridad y conciliación uno a uno con doble firma.' },
+      { t: 'task', name: 'Servicio 6.3 — Ciclo de Requerimientos (USR.01 · USR.02 · alertas)', s: '2026-06-26', e: '2026-07-08', p: 0,
+        d: 'Ingreso flexible de cinco pestañas, validación de duplicados por RUT y admisibilidad con tres decisiones y plazos visibles.' },
+      { t: 'task', name: 'siger-service — puente del legado · repositorio histórico de solo lectura', s: '2026-07-06', e: '2026-07-12', p: 0,
+        d: 'Consulta del archivo histórico exclusivamente tras el Gateway con credencial territorial: clausura del acceso cruzado también para el pasado.' },
+      { t: 'task', name: 'Pruebas de esfuerzo de contenedores (Docker/WSL) con TI de Infraestructura', s: '2026-07-08', e: '2026-07-14', p: 0,
+        d: 'Cargas representativas sobre RabbitMQ, MinIO y servicios del clúster; runbooks de respaldo y reversa verificados por el equipo de plataforma.' },
+      { t: 'mile', kind: 'next', name: 'CIERRE DE PRÁCTICA — documentación exhaustiva (Bus Factor) y traspaso de la zapata técnica', s: '2026-07-15',
+        d: 'Entrega del activo documental de primera clase y traspaso ordenado hacia la segunda fase de Ingeniería: continuidad garantizada.' },
+    ]
+  },
+];
+
+/* ================= Encabezado temporal ================= */
+const rowMonths = document.getElementById('rowMonths');
+MONTHS.forEach(([name, days], i) => {
+  const el = document.createElement('div');
+  el.className = 'py-2.5 text-center font-display font-semibold text-[13px] uppercase tracking-[.18em] text-slate-300'
+    + (i < MONTHS.length - 1 ? ' border-r border-white/10' : '');
+  el.style.width = (days / TOTAL * 100) + '%';
+  el.innerHTML = name + ' <span class="font-mono text-[10px] text-slate-500 tracking-normal">2026</span>';
+  rowMonths.appendChild(el);
+});
+
+const rowWeeks = document.getElementById('rowWeeks');
+for (let w = 0; w < 13; w++) {
+  const span = (w < 12) ? 7 : 3;
+  const startDay = w * 7;
+  const el = document.createElement('div');
+  el.className = 'py-1.5 text-center border-r border-white/5 last:border-r-0';
+  el.style.width = (span / TOTAL * 100) + '%';
+  const date = new Date(START.getTime() + startDay * 864e5);
+  const dd = String(date.getDate()).padStart(2, '0');
+  el.innerHTML = (w < 12)
+    ? `<span class="font-mono text-[10px] text-slate-500">S${w + 1}</span> <span class="font-mono text-[10px] text-slate-600">· ${dd}</span>`
+    : `<span class="font-mono text-[10px] text-amber-400">fin</span>`;
+  rowWeeks.appendChild(el);
+}
+
+/* ================= Grilla de fondo + línea HOY ================= */
+const grid = document.getElementById('gridLayer');
+let acc = 0;
+MONTHS.forEach(([_, days], i) => {
+  acc += days;
+  if (i < MONTHS.length - 1) {
+    const l = document.createElement('div');
+    l.className = 'absolute top-0 bottom-0 border-l border-slate-500/25';
+    l.style.left = (acc / TOTAL * 100) + '%';
+    grid.appendChild(l);
+  }
+});
+for (let w = 1; w < 13; w++) {
+  const l = document.createElement('div');
+  l.className = 'absolute top-0 bottom-0 border-l border-slate-400/[.07]';
+  l.style.left = (w * 7 / TOTAL * 100) + '%';
+  grid.appendChild(l);
+}
+/* Línea HOY (firma visual) */
+const todayLeft = ((dIdx(TODAY) + 0.5) / TOTAL * 100);
+const today = document.createElement('div');
+today.className = 'absolute top-0 bottom-0 today-line';
+today.style.left = todayLeft + '%';
+today.innerHTML = `
+  <div class="absolute inset-y-0 -translate-x-1/2 w-px bg-gradient-to-b from-amber-300 via-amber-400/80 to-amber-300"></div>
+  <div class="absolute top-1 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-amber-400 pulse-amber"></div>
+  <div class="absolute top-5 -translate-x-1/2 font-mono text-[10px] tracking-widest text-amber-300 bg-ink-900/90 ring-1 ring-amber-400/40 rounded px-1.5 py-0.5 whitespace-nowrap">HOY · 11 JUN</div>`;
+grid.appendChild(today);
+
+/* ================= Filas: fases, tareas e hitos ================= */
+const rows = document.getElementById('rows');
+const tip = document.getElementById('tip');
+let barCount = 0, doneItems = 0, totalItems = 0, wDays = 0, wDone = 0;
+
+function showTip(target, data) {
+  document.getElementById('tipTitle').textContent = data.name;
+  document.getElementById('tipDates').textContent = data.dates;
+  document.getElementById('tipDesc').textContent = data.d || '';
+  const pw = document.getElementById('tipProgWrap');
+  if (data.p === null) { pw.classList.add('hidden'); }
+  else {
+    pw.classList.remove('hidden');
+    document.getElementById('tipProg').style.width = data.p + '%';
+    document.getElementById('tipProg').className = 'h-full ' + (data.p === 100 ? 'bg-emerald-400' : data.p === 0 ? 'bg-amber-400' : 'bg-inst-400');
+    document.getElementById('tipPct').textContent = data.p + '%';
+  }
+  tip.classList.remove('hidden');
+  const r = target.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = r.left + r.width / 2 - tw / 2;
+  x = Math.max(10, Math.min(x, window.innerWidth - tw - 10));
+  let y = r.top - th - 10;
+  if (y < 10) y = r.bottom + 10;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+}
+function hideTip(){ tip.classList.add('hidden'); }
+
+PHASES.forEach(ph => {
+  /* --- banda de fase --- */
+  const done = ph.status === 'done';
+  const band = document.createElement('div');
+  band.className = 'grid border-t border-white/10';
+  band.style.gridTemplateColumns = '264px 1fr';
+  band.innerHTML = `
+    <div class="sticky left-0 z-30 bg-ink-850/95 backdrop-blur border-r border-white/10 px-5 py-3 flex items-center gap-3">
+      <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded ${done ? 'bg-inst-600/30 text-inst-400 ring-1 ring-inst-500/40' : 'bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/40'}">${ph.id}</span>
+      <div class="min-w-0">
+        <p class="font-display font-semibold text-[13px] text-slate-200 leading-snug">${ph.name}</p>
+        <p class="font-mono text-[10px] text-slate-500">${fmt(ph.range[0])} — ${fmt(ph.range[1])}${ph.note ? ' · <span class="text-amber-400/90">' + ph.note + '</span>' : ''}</p>
+      </div>
+    </div>
+    <div class="relative bg-ink-850/40">
+      <div class="absolute top-1/2 -translate-y-1/2 h-[3px] rounded-full ${done ? 'bg-inst-500/45' : 'bg-amber-400/35'}"
+           style="left:${pctL(ph.range[0])}%; width:${pctW(ph.range[0], ph.range[1])}%"></div>
+      <span class="absolute top-1/2 -translate-y-1/2 font-mono text-[10px] ${done ? 'text-emerald-300' : 'text-amber-300'}"
+            style="left:calc(${pctL(ph.range[0]) + pctW(ph.range[0], ph.range[1])}% + 8px)">${done ? '✓ 100%' : '0% · comprometida'}</span>
+    </div>`;
+  rows.appendChild(band);
+
+  /* --- ítems --- */
+  ph.items.forEach(it => {
+    totalItems++;
+    const row = document.createElement('div');
+    row.className = 'grid row-hover transition-colors';
+    row.style.gridTemplateColumns = '264px 1fr';
+
+    if (it.t === 'task') {
+      wDays += (dIdx(it.e) - dIdx(it.s) + 1);
+      wDone += (dIdx(it.e) - dIdx(it.s) + 1) * it.p / 100;
+      if (it.p === 100) doneItems++;
+      const left = pctL(it.s), width = pctW(it.s, it.e);
+      const isDone = it.p === 100;
+      const labelInside = width >= 17;
+      row.innerHTML = `
+        <div class="sticky left-0 z-20 bg-ink-900/95 backdrop-blur border-r border-white/10 pl-9 pr-4 py-2">
+          <p class="lbl text-[12px] text-slate-400 leading-snug transition-colors">${it.name}</p>
+        </div>
+        <div class="relative h-10">
+          <div class="bar group absolute top-1/2 -translate-y-1/2 h-[22px] rounded-md cursor-default outline-none
+                      ${isDone ? 'bg-gradient-to-r from-inst-700 to-inst-500 ring-1 ring-inst-400/40'
+                               : 'bg-amber-400/15 ring-1 ring-amber-400/60 border border-dashed border-amber-400/40'}
+                      focus-visible:ring-2 focus-visible:ring-emerald-300"
+               style="left:${left}%; width:${width}%; transition-delay:${barCount * 55}ms"
+               tabindex="0" role="img"
+               aria-label="${it.name}. ${fmt(it.s)} a ${fmt(it.e)}. Avance ${it.p} por ciento.">
+            <div class="absolute inset-y-0 left-0 rounded-md ${isDone ? 'bg-emerald-400/85' : 'bg-amber-400/70'}" style="width:${it.p}%"></div>
+            ${labelInside ? `<span class="absolute inset-y-0 left-2 flex items-center font-mono text-[10px] font-medium ${isDone ? 'text-ink-950' : 'text-amber-200'} whitespace-nowrap overflow-hidden max-w-[92%]">${fmt(it.s)} → ${fmt(it.e)}</span>` : ''}
+            <span class="absolute top-1/2 -translate-y-1/2 font-mono text-[10px] ${isDone ? 'text-emerald-300' : 'text-amber-300/90'}" style="left:calc(100% + 7px)">${it.p}%</span>
+          </div>
+        </div>`;
+      rows.appendChild(row);
+      const bar = row.querySelector('.bar');
+      const data = { name: it.name, dates: `${fmt(it.s)} — ${fmt(it.e)} · 2026`, d: it.d, p: it.p };
+      bar.addEventListener('mouseenter', () => showTip(bar, data));
+      bar.addEventListener('mouseleave', hideTip);
+      bar.addEventListener('focus', () => showTip(bar, data));
+      bar.addEventListener('blur', hideTip);
+      barCount++;
+    } else {
+      /* hito */
+      if (it.kind !== 'next') doneItems++;
+      const left = pctL(it.s) + (0.5 / TOTAL * 100);
+      const color = it.kind === 'pivot' ? 'bg-rose-400 ring-rose-300/50' : it.kind === 'next' ? 'bg-amber-400 ring-amber-300/50 pulse-amber' : 'bg-emerald-400 ring-emerald-300/50';
+      const txt = it.kind === 'pivot' ? 'text-rose-300' : it.kind === 'next' ? 'text-amber-300' : 'text-emerald-300';
+      row.innerHTML = `
+        <div class="sticky left-0 z-20 bg-ink-900/95 backdrop-blur border-r border-white/10 pl-9 pr-4 py-2">
+          <p class="lbl text-[12px] font-medium ${txt} leading-snug transition-colors">◆ ${it.name}</p>
+        </div>
+        <div class="relative h-10">
+          <div class="mile group absolute top-1/2 -translate-y-1/2 -translate-x-1/2 outline-none cursor-default focus-visible:scale-125 transition-transform"
+               style="left:${left}%" tabindex="0" role="img" aria-label="Hito: ${it.name}. ${fmt(it.s)} de 2026.">
+            <div class="w-3.5 h-3.5 diamond ${color} ring-2 shadow-lg"></div>
+          </div>
+          <span class="absolute top-1/2 -translate-y-1/2 font-mono text-[10px] ${txt} whitespace-nowrap" style="left:calc(${left}% + 14px)">${fmt(it.s)}</span>
+        </div>`;
+      rows.appendChild(row);
+      const m = row.querySelector('.mile');
+      const data = { name: it.name, dates: `${fmt(it.s)} · 2026 — hito`, d: it.d, p: null };
+      m.addEventListener('mouseenter', () => showTip(m, data));
+      m.addEventListener('mouseleave', hideTip);
+      m.addEventListener('focus', () => showTip(m, data));
+      m.addEventListener('blur', hideTip);
+    }
+  });
+});
+
+/* ================= KPIs y animación de entrada ================= */
+const globalPct = Math.round(wDone / wDays * 100);
+document.getElementById('kpiGlobal').textContent = globalPct;
+document.getElementById('kpiGlobalBar').style.width = globalPct + '%';
+document.getElementById('kpiDone').textContent = doneItems;
+document.getElementById('kpiTotal').textContent = totalItems;
+document.getElementById('kpiDays').textContent = dIdx('2026-07-15') - dIdx(TODAY);
+
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  document.querySelectorAll('.bar').forEach(b => b.classList.add('in'));
+}));
+window.addEventListener('scroll', hideTip, { passive: true });
+</script>
+</body>
+</html>

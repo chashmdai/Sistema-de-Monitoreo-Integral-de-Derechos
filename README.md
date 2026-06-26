@@ -28,7 +28,8 @@ opera con una herramienta local **sin dependencias** (Python + PowerShell) con d
 9. [Perfiles y variables de entorno](#9-perfiles-y-variables-de-entorno)
 10. [Repositorios independientes](#10-repositorios-independientes)
 11. [Documentación por componente](#11-documentación-por-componente)
-12. [Troubleshooting operativo](#12-troubleshooting-operativo)
+12. [Corpus documental legado y normativo](#12-corpus-documental-legado-y-normativo)
+13. [Troubleshooting operativo](#13-troubleshooting-operativo)
 
 ---
 
@@ -109,6 +110,7 @@ SIGER/
 │   ├── e2e.ps1                Prueba end-to-end del ecosistema
 │   └── demo-siger.ps1         Demo guiada
 ├── api-docs/                 Contratos OpenAPI exportados por servicio
+├── docs/                     Corpus legado, normativo y de transición institucional
 ├── assets/brand/             Identidad visual SMID
 ├── _runtime-logs/            Logs y estado de ejecución (no se versiona)
 ├── Abrir SIGER Dashboard.bat Lanzador del panel
@@ -281,10 +283,37 @@ git diff --check
 | SGS (legado IA) | [`services/sgs-service/README.md`](services/sgs-service/README.md) |
 | Frontend SMID | [`frontends/smid/README.md`](frontends/smid/README.md) |
 | Identidad visual | [`assets/brand/README.md`](assets/brand/README.md) |
+| Corpus documental | [`docs/README.md`](docs/README.md) |
 
 ---
 
-## 12. Troubleshooting operativo
+## 12. Corpus documental legado y normativo
+
+La carpeta [`docs/`](docs/) contiene el material de referencia que sostiene el diseño del ecosistema:
+manuales y especificaciones del SIGER legado, propuesta original, dump estructural sin datos de
+clientes, minutas directivas, informe de obsolescencia, carta Gantt y copias de trabajo de leyes
+base. La lectura principal está ordenada en [`docs/README.md`](docs/README.md).
+
+Ese corpus se usa para tres decisiones de arquitectura:
+
+- Preservar el flujo funcional probado: ingreso de requerimiento, admisibilidad, asignación,
+  caso/expediente, FIR, productos y seguimiento.
+- Sustituir el acoplamiento del legado por servicios con límites claros y trazabilidad verificable.
+- Alinear el diseño con reserva territorial, protección de datos personales y continuidad
+  institucional.
+
+Materiales clave:
+
+| Tipo | Archivos | Uso en SMID |
+|---|---|---|
+| Manuales y especificaciones | `2019.07.22...docx`, `USR.01`, `USR.02`, `USR.03` | Backlog funcional y validación de flujos |
+| Diagnóstico y decisión | Informe de obsolescencia, auditoría, minutas 1-3 | Justificación del patrón strangler y del MVP fundacional |
+| Normativa | Leyes 18.575, 21.067, 21.430, 21.719 | Marco institucional, niñez, reserva y datos personales |
+| Evidencia técnica | SQL legado, PR658, Gantt, presentación | Mapeo histórico, riesgos, plan y trazabilidad de transición |
+
+---
+
+## 13. Troubleshooting operativo
 
 | Síntoma | Revisión rápida | Corrección típica |
 |---|---|---|
