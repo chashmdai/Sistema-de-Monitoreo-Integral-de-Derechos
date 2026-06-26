@@ -73,6 +73,7 @@ Fuente única de verdad: [`scripts/services.json`](scripts/services.json).
 | Núcleo | **productos-service** | 6.6 | 8092 | `/api/productos` | `db_productos` | Productos y tareas del caso |
 | Núcleo | **antecedentes-service** | 6.8 | 8094 | `/api/antecedentes` | `db_antecedentes` | Antecedentes y hallazgos *(opcional)* |
 | Referencia | **instituciones-service** | 6.10 | 8093 | `/api/instituciones` | `db_instituciones` | Catálogo nacional de instituciones *(opcional)* |
+| Legado SMID | **smid-service** | — | 8085 | `/api/smid` | `smid_db` | Core legado: requerimientos SMID, evaluaciones, oficios, legislativo y reportes *(opcional)* |
 | Legado IA | **esnna-service** | — | 8086 | `/api/esnna` | `db_esnna` | Motor IA de casos ESNNA *(opcional)* |
 | Legado IA | **sgs-service** | — | 8083 | `/api/sgs` | `db_sgs` | Gestión y seguimiento con IA *(opcional)* |
 | Frontend | **frontend-smid** | — | 3000 | (proxy `/api`) | — | SPA Vite/React *(opcional)* |
@@ -90,6 +91,7 @@ SIGER/
 │   ├── smid-auth/            Identidad (6.1)
 │   ├── catalogo-service/     … resto del Núcleo (6.x)
 │   ├── …
+│   ├── smid-service/         Core legado SMID
 │   ├── esnna-service/        Legado IA (motor ESNNA)  + DISENO.md
 │   └── sgs-service/          Legado IA (gestión y seguimiento)
 ├── frontends/
@@ -227,6 +229,7 @@ meta-repo que versiona solo el *pegamento*) se define al publicar.
 | Gateway | [`services/smid-api-gateway/README.md`](services/smid-api-gateway/README.md) |
 | Identidad | [`services/smid-auth/README.md`](services/smid-auth/README.md) |
 | Núcleo (6.x) | READMEs en `services/<servicio>/README.md` |
+| SMID Core legado | [`services/smid-service/README.md`](services/smid-service/README.md) |
 | ESNNA (legado IA) | [`services/esnna-service/README.md`](services/esnna-service/README.md) · [`DISENO.md`](services/esnna-service/DISENO.md) |
 | SGS (legado IA) | [`services/sgs-service/README.md`](services/sgs-service/README.md) |
 | Frontend SMID | [`frontends/smid/README.md`](frontends/smid/README.md) |

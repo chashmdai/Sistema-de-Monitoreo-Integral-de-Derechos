@@ -143,6 +143,20 @@
       "events": { "consumes": ["caso.abierto"], "publishes": ["producto.emitido", "tarea.completada"] }
     },
     {
+      "name": "smid-service",
+      "module": "",
+      "displayName": "SMID Core",
+      "domain": "Core legado del Sistema Integral de Monitoreo de Derechos: requerimientos SMID, evaluaciones de garantes, oficios, legislativo y reportes.",
+      "tier": "legado",
+      "port": 8085,
+      "optional": true,
+      "startLevel": 4,
+      "gatewayRoute": "/api/smid",
+      "db": "smid_db",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": [] }
+    },
+    {
       "name": "antecedentes-service",
       "module": "6.8",
       "displayName": "Antecedentes y Hallazgos",
