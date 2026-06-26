@@ -1,0 +1,102 @@
+# ============================================================================
+#  requerimientos-service (6.3) — configuración base
+#  DT-2: este archivo SOLO contiene referencias ${VARIABLE}; jamás secretos.
+#  Los valores se documentan en .env.example y se inyectan por el orquestador.
+# ============================================================================
+server:
+  port: ${SERVER_PORT:8089}          # Coordenada del Núcleo: Requerimientos -> 8089
+
+spring:
+  application:
+    name: requerimientos-service
+
+  threads:
+    virtual:
+      enabled: true                  # Java 21: hilos virtuales (Núcleo 2.1)
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate             # DT-5: jamás 'update'. Flyway es el dueño del esquema.
+    open-in-view: false
+    properties:
+      "[hibernate.jdbc.time_zone]": UTC             # La app escribe SIEMPRE en UTC (DATETIME(6) UTC)
+      "[hibernate.format_sql]": false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+# ---------------------------------------------------------------------------
+#  Configuración propia del servicio
+# ---------------------------------------------------------------------------
+smid:
+  # --- Validación del JWT (defensa en profundidad, DT-3). HS256 con kid. ---
+  jwt:
+    issuer: ${JWT_ISSUER:smid-auth}            # claim iss esperado
+    audience: ${JWT_AUDIENCE:smid-servicios}   # el claim aud debe CONTENER este valor
+    kid-activo: ${JWT_KID:smid-2026-06}        # kid de la clave de firma activa
+    secreto-activo: ${JWT_SECRET}              # secreto HS256 de la clave activa (obligatorio)
+    kid-previo: ${JWT_KID_PREVIO:}             # clave previa opcional (ventana de rotación)
+    secreto-previo: ${JWT_SECRET_PREVIO:}
+
+  # --- Autorización por rol. Roles que conceden la facultad de Coordinación ---
+  #  (decidir la admisibilidad, USR.02). Comparación insensible a mayúsculas.
+  #  Configurable por entorno (CSV); si se omite, aplica el conjunto por defecto.
+  seguridad:
+    roles-coordinacion: ${ROLES_COORDINACION:COORDINADOR,COORDINACION,ADMIN_SEDE,ADMIN_NACIONAL}
+
+  # --- Eventos de dominio hacia Auditoría (futura). Transporte conmutable. ---
+  eventos:
+    transporte: ${EVENTOS_TRANSPORTE:log}      # 'log' (def.) o 'rabbitmq'
+    exchange: ${EVENTOS_EXCHANGE:smid.eventos} # topic exchange
+
+  # --- Política de folio y aislamiento de la serie oficial (correlativo 0/2027) ---
+  folio:
+    # A partir de esta fecha, los requerimientos nuevos usan la serie OFICIAL.
+    # Antes de ella (marcha blanca) usan la serie BETA y NO consumen numeración oficial.
+    inicio-oficial: ${FOLIO_INICIO_OFICIAL:2027-01-01}
+
+  # --- Catálogo local de códigos de sede (resuelve {CODIGO_SEDE} del folio) ---
+  #  El token solo transporta idSede como alt_key (UUID); el código institucional
+  #  (RM, V, VIII, ...) no viaja en los claims. Se resuelve por configuración
+  #  (costura: a futuro, un adaptador contra Identidad sin tocar el dominio).
+  #  Formato: smid.sedes.codigos.<alt_key_sede>=<CODIGO>
+  sedes:
+    codigo-por-defecto: ${SEDE_CODIGO_DEFECTO:SED}   # respaldo determinista si falta el mapeo
+    codigos: {}
+
+  # --- Integración servicio a servicio (puertos de salida -> adaptadores REST) ---
+  integracion:
+    personas-url: ${PERSONAS_URL:http://localhost:8088}
+    catalogo-url: ${CATALOGO_URL:http://localhost:8087}
+    identidad-url: ${IDENTIDAD_URL:http://localhost:8081}
+    # Política de verificación de pertenencia del profesional a la unidad de destino.
+    # 'estricta' exige resolver al profesional en Identidad; 'permisiva' (def.) tolera
+    # la indisponibilidad del endpoint de Identidad (aún no publicado de forma estable).
+    verificacion-profesional: ${VERIFICACION_PROFESIONAL:permisiva}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    "[cl.smid.requerimientos]": INFO

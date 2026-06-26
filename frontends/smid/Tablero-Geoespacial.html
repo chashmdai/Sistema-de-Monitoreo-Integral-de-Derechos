@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tablero Geoespacial de Vulneraciones — O'Higgins y Maule</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<style>
+  :root{
+    --navy:#0b2545;
+    --navy-2:#13315c;
+    --ink:#1f2937;
+    --ink-2:#374151;
+    --muted:#6b7280;
+    --line:#d6dbe2;
+    --line-2:#e6e9ee;
+    --bg:#f4f5f7;
+    --panel:#ffffff;
+    --red:#c8102e;        /* Chile institucional */
+    --accent:#1d4ed8;
+    --shadow: 0 1px 2px rgba(11,37,69,.06), 0 8px 24px rgba(11,37,69,.10);
+    --radius: 6px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;width:100%;background:var(--bg);
+    font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:var(--ink); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    overflow:hidden;
+  }
+
+  /* ============ HEADER ============ */
+  .topbar{
+    position:fixed; top:0; left:0; right:0; z-index:1000;
+    height:56px; display:flex; align-items:center;
+    background:#fff; border-bottom:1px solid var(--line);
+    padding:0 18px 0 18px;
+    box-shadow:0 1px 0 rgba(11,37,69,.04);
+  }
+  .brand{display:flex;align-items:center;gap:10px;min-width:230px}
+  .emblem{
+    width:30px;height:22px;border-radius:2px;overflow:hidden;
+    border:1px solid #d2d6dc; display:grid; grid-template-columns:11px 1fr;
+    background:#fff; flex:none;
+  }
+  .emblem .blue{background:#0b2c6b; position:relative}
+  .emblem .blue::after{
+    content:""; position:absolute; left:50%; top:50%;
+    width:7px;height:7px; transform:translate(-50%,-50%);
+    background:
+      conic-gradient(from -18deg,
+        #fff 0 20%, transparent 20% 40%,
+        #fff 40% 60%, transparent 60% 80%,
+        #fff 80% 100%);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
+  .emblem .stripes{display:grid;grid-template-rows:1fr 1fr}
+  .emblem .stripes .w{background:#fff}
+  .emblem .stripes .r{background:var(--red)}
+  .defensoria{
+    font-weight:700; letter-spacing:.08em; font-size:13px;
+    color:var(--navy);
+  }
+  .defensoria .accent{color:var(--red)}
+
+  .title{
+    flex:1; text-align:center;
+    font-weight:600; letter-spacing:.06em; font-size:13.5px;
+    color:var(--navy); text-transform:uppercase;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .title .sep{color:var(--muted); margin:0 8px; font-weight:400}
+
+  .menu{
+    width:40px;height:40px;border-radius:6px; border:1px solid transparent;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    background:transparent; color:#6b7280; transition:.15s;
+  }
+  .menu:hover{background:#f3f4f6; color:var(--ink)}
+  .menu svg{display:block}
+
+  /* ============ MAP ============ */
+  #map{
+    position:fixed; inset:56px 0 0 0;
+    background:#eef0f3;
+  }
+
+  /* Leaflet tweaks — institutional look */
+  .leaflet-container{ font-family:'IBM Plex Sans',sans-serif; background:#eef0f3; }
+  .leaflet-control-zoom{
+    border:1px solid var(--line) !important; border-radius:var(--radius) !important;
+    box-shadow:var(--shadow) !important; overflow:hidden;
+    margin-top:14px !important; margin-left:14px !important;
+  }
+  .leaflet-control-zoom a{
+    width:34px !important; height:34px !important; line-height:34px !important;
+    background:#fff !important; color:var(--navy) !important;
+    font-weight:500 !important; font-size:18px !important;
+    border-bottom:1px solid var(--line-2) !important;
+  }
+  .leaflet-control-zoom a:last-child{border-bottom:none !important}
+  .leaflet-control-zoom a:hover{ background:#f6f7f9 !important; color:var(--accent) !important }
+  .leaflet-control-attribution{
+    background:rgba(255,255,255,.85) !important;
+    font-size:10px !important; color:#7b8390 !important;
+    padding:2px 8px !important;
+  }
+  .leaflet-control-attribution a{ color:#5b6675 !important }
+
+  /* City label markers */
+  .city-label{
+    background:transparent;border:none;
+  }
+  .city-label .pin{
+    width:6px;height:6px;border-radius:50%;
+    background:#1f2937; border:1.5px solid #fff;
+    box-shadow:0 0 0 1px rgba(31,41,55,.35);
+    margin:0 auto;
+  }
+  .city-label .name{
+    margin-top:3px; font-size:11.5px; font-weight:500;
+    color:#1f2937; letter-spacing:.01em;
+    text-shadow:
+      -1px -1px 0 #fff, 1px -1px 0 #fff,
+      -1px  1px 0 #fff, 1px  1px 0 #fff,
+       0   -1px 0 #fff, 0    1px 0 #fff,
+      -1px  0  0 #fff, 1px  0  0 #fff;
+    white-space:nowrap; text-align:center;
+  }
+  .region-label{ background:transparent; border:none; pointer-events:none }
+  .region-label .rname{
+    font-size:11px; font-weight:600; letter-spacing:.18em;
+    color:#5b6675; text-transform:uppercase;
+    text-shadow:
+      -1px -1px 0 #f4f5f7, 1px -1px 0 #f4f5f7,
+      -1px  1px 0 #f4f5f7, 1px  1px 0 #f4f5f7;
+    text-align:center; line-height:1.2;
+  }
+
+  /* ============ PANELS (floating) ============ */
+  .panel{
+    position:fixed; z-index:900;
+    background:#fff; border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+  }
+
+  /* Search + stats — top right */
+  .right-stack{
+    position:fixed; z-index:900;
+    top:70px; right:14px; width:320px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .search{
+    display:flex; align-items:center; height:42px;
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:0 6px 0 12px;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .search:focus-within{
+    border-color:var(--navy-2);
+    box-shadow:0 0 0 3px rgba(11,37,69,.10), var(--shadow);
+  }
+  .search svg{color:#6b7280; flex:none}
+  .search input{
+    flex:1; border:0; outline:0; background:transparent;
+    font:500 13px 'IBM Plex Sans',sans-serif; color:var(--ink);
+    padding:0 10px; min-width:0;
+  }
+  .search input::placeholder{color:#9aa3af; font-weight:400}
+  .search .go{
+    width:32px;height:32px;border-radius:4px;border:none;background:var(--navy);
+    color:#fff; display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:.15s;
+  }
+  .search .go:hover{ background:var(--navy-2) }
+
+  .stats{
+    padding:14px 16px 14px 16px;
+  }
+  .stats h4{
+    margin:0 0 4px 0; font-size:10.5px; font-weight:600;
+    letter-spacing:.14em; color:var(--muted); text-transform:uppercase;
+  }
+  .stats .num{
+    font:600 26px/1.1 'IBM Plex Sans',sans-serif; color:var(--navy);
+    letter-spacing:-.01em;
+  }
+  .stats .divider{ height:1px; background:var(--line-2); margin:12px 0 }
+  .stats .row{
+    font-size:13px; color:var(--ink-2);
+  }
+  .stats .row b{ color:var(--navy); font-weight:600 }
+  .stats .bar{
+    display:flex; align-items:center; gap:6px; margin-top:8px;
+    font-size:11.5px; color:#6b7280;
+  }
+  .stats .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:#fdecef; color:#9c1224;
+    border:1px solid #f5c8cf; border-radius:999px;
+    padding:2px 8px; font-size:11px; font-weight:500;
+  }
+  .stats .chip .dot{ width:6px;height:6px;border-radius:50%; background:#c8102e }
+
+  .refresh{
+    margin-top:14px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; height:36px;
+    background:var(--navy); color:#fff; border:none; border-radius:4px;
+    font:500 12.5px 'IBM Plex Sans',sans-serif; letter-spacing:.04em;
+    cursor:pointer; transition:.15s;
+  }
+  .refresh:hover{ background:#091d36 }
+  .refresh:active{ transform:translateY(1px) }
+  .refresh svg{transition:transform .6s}
+  .refresh.spinning svg{ transform:rotate(360deg) }
+  .refresh .lab{ font-weight:500 }
+
+  .ts{
+    margin-top:8px; font-size:10.5px; color:#9aa3af;
+    display:flex; align-items:center; gap:6px;
+  }
+  .ts .live{
+    width:6px;height:6px;border-radius:50%; background:#10b981;
+    box-shadow:0 0 0 3px rgba(16,185,129,.18);
+  }
+
+  /* Legend — bottom left */
+  .legend{
+    bottom:18px; left:14px; padding:12px 14px; width:280px;
+  }
+  .legend h5{
+    margin:0 0 8px 0; font-size:10.5px; font-weight:600;
+    letter-spacing:.14em; color:var(--muted); text-transform:uppercase;
+  }
+  .legend .grad{
+    height:10px; border-radius:3px;
+    background:linear-gradient(to right,
+      #2bb673 0%, #a8d24a 25%, #ffd400 50%, #ff8a1f 75%, #d32d2f 100%);
+    border:1px solid rgba(0,0,0,.06);
+  }
+  .legend .labs{
+    display:flex; justify-content:space-between; margin-top:6px;
+    font-size:10.5px; color:#6b7280; letter-spacing:.02em;
+  }
+  .legend .labs b{font-weight:600;color:#374151}
+
+  /* Region badges */
+  .region-tag{
+    position:fixed; z-index:850;
+    background:rgba(255,255,255,.95); border:1px solid var(--line);
+    border-radius:4px; padding:8px 12px; box-shadow:var(--shadow);
+    font-size:11px; letter-spacing:.12em; font-weight:600;
+    color:var(--navy); text-transform:uppercase;
+  }
+
+  /* Status pill (refreshing) */
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translate(-50%, 20px);
+    background:var(--navy); color:#fff;
+    padding:8px 14px; border-radius:999px; font-size:12px; font-weight:500;
+    box-shadow:var(--shadow); opacity:0; pointer-events:none;
+    transition:.25s ease;
+    display:flex; align-items:center; gap:8px;
+    z-index:1100;
+  }
+  .toast .spin{
+    width:12px;height:12px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+    animation:spin .8s linear infinite;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, 0) }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+
+  /* Side drawer (hamburger) */
+  .drawer-back{
+    position:fixed; inset:0; background:rgba(11,37,69,.18);
+    opacity:0; pointer-events:none; transition:.2s; z-index:1200;
+  }
+  .drawer-back.open{ opacity:1; pointer-events:auto }
+  .drawer{
+    position:fixed; top:0; right:0; bottom:0; width:320px;
+    background:#fff; box-shadow:-12px 0 32px rgba(11,37,69,.18);
+    transform:translateX(100%); transition:.25s ease; z-index:1300;
+    padding:18px 20px; display:flex; flex-direction:column; gap:8px;
+  }
+  .drawer.open{ transform:translateX(0) }
+  .drawer h3{
+    margin:6px 0 14px 0; font-size:12px; font-weight:600;
+    letter-spacing:.14em; color:var(--muted); text-transform:uppercase;
+  }
+  .drawer a{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 12px; border-radius:4px; color:var(--ink);
+    text-decoration:none; font-size:13.5px; cursor:pointer;
+    border:1px solid transparent;
+  }
+  .drawer a:hover{ background:#f4f5f7; border-color:var(--line-2) }
+  .drawer .close{
+    position:absolute; top:12px; right:12px; width:32px;height:32px;
+    border:none; background:transparent; cursor:pointer; color:#6b7280; border-radius:4px;
+  }
+  .drawer .close:hover{ background:#f3f4f6 }
+  .drawer .sep{ height:1px; background:var(--line-2); margin:10px 0 }
+
+  /* Hide leaflet "leaflet" image controls outline */
+  .leaflet-bar a:focus{ outline:none }
+
+  /* Responsive */
+  @media (max-width:920px){
+    .title{font-size:11px; letter-spacing:.04em}
+    .right-stack{width:280px}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="topbar">
+  <div class="brand">
+    <div class="emblem" aria-hidden="true">
+      <div class="blue"></div>
+      <div class="stripes"><div class="w"></div><div class="r"></div></div>
+    </div>
+    <div class="defensoria">DEFENSOR<span class="accent">Í</span>A</div>
+  </div>
+  <div class="title">Tablero Geoespacial de Vulneraciones <span class="sep">—</span> O'Higgins y Maule</div>
+  <button class="menu" id="menuBtn" aria-label="Abrir menú">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M4 7h16M4 12h16M4 17h16"/>
+    </svg>
+  </button>
+</header>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- SEARCH + STATS (top right) -->
+<div class="right-stack">
+  <div class="search panel" style="position:static">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+    </svg>
+    <input id="searchInput" type="text" placeholder="Buscar dirección o coordenadas..." autocomplete="off"/>
+    <button class="go" id="searchGo" aria-label="Buscar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="panel stats" style="position:static">
+    <h4>Total casos registrados</h4>
+    <div class="num" id="totalCases">1,489</div>
+
+    <div class="divider"></div>
+
+    <h4>Mayor concentración</h4>
+    <div class="row"><b>Comuna de Rancagua</b> &nbsp;·&nbsp; <span id="topCount">312</span> casos</div>
+    <div class="bar">
+      <span class="chip"><span class="dot"></span>Alta intensidad</span>
+      <span style="color:#9aa3af">+12% vs. mes anterior</span>
+    </div>
+
+    <button class="refresh" id="refreshBtn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>
+      </svg>
+      <span class="lab">Refrescar datos</span>
+    </button>
+
+    <div class="ts">
+      <span class="live"></span>
+      <span>Última actualización: <span id="updTime">hace 2 min</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="panel legend">
+  <h5>Intensidad de vulneraciones</h5>
+  <div class="grad"></div>
+  <div class="labs"><span><b>Baja</b> (Verde)</span><span><b>Alta</b> (Rojo)</span></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="spin"></span><span id="toastText">Actualizando datos…</span></div>
+
+<!-- DRAWER -->
+<div class="drawer-back" id="drawerBack"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <button class="close" id="drawerClose" aria-label="Cerrar">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+  </button>
+  <h3>Navegación</h3>
+  <a>Tablero Geoespacial<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></a>
+  <a>Reportes por comuna<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></a>
+  <a>Indicadores históricos<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></a>
+  <a>Casos individuales<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg></a>
+  <div class="sep"></div>
+  <h3>Capas</h3>
+  <a>Límites regionales<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg></a>
+  <a>Centros de atención<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg></a>
+  <div class="sep"></div>
+  <h3>Exportar</h3>
+  <a>Descargar CSV<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg></a>
+  <a>Generar informe PDF<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg></a>
+</aside>
+
+<script>
+/* ===========================
+   MOCK DATA — generación
+   =========================== */
+
+// Comunas principales (centro de Chile — regiones O'Higgins y Maule)
+const COMUNAS = [
+  { name:'Rancagua',     lat:-34.170,  lng:-70.740, weight:1.00, count:312, big:true  },
+  { name:'San Fernando', lat:-34.583,  lng:-70.990, weight:0.55, count:148, big:false },
+  { name:'Curicó',       lat:-34.985,  lng:-71.239, weight:0.65, count:174, big:false },
+  { name:'Talca',        lat:-35.426,  lng:-71.654, weight:0.95, count:268, big:true  },
+  { name:'Linares',      lat:-35.846,  lng:-71.593, weight:0.45, count:121, big:false },
+  // pueblos / localidades menores
+  { name:'Machalí',      lat:-34.183,  lng:-70.650, weight:0.30, count:48,  big:false },
+  { name:'Pichilemu',    lat:-34.387,  lng:-72.005, weight:0.18, count:24,  big:false },
+  { name:'Santa Cruz',   lat:-34.638,  lng:-71.367, weight:0.22, count:33,  big:false },
+  { name:'Molina',       lat:-35.114,  lng:-71.282, weight:0.18, count:22,  big:false },
+  { name:'Constitución', lat:-35.333,  lng:-72.413, weight:0.20, count:29,  big:false },
+  { name:'Parral',       lat:-36.143,  lng:-71.832, weight:0.18, count:26,  big:false },
+  { name:'Cauquenes',    lat:-35.967,  lng:-72.323, weight:0.18, count:25,  big:false },
+];
+
+// Etiquetas de región (no son markers — sólo labels en el mapa)
+const REGION_LABELS = [
+  { name:"Región del Libertador Gral. Bernardo O'Higgins", lat:-34.40, lng:-71.05 },
+  { name:'Región del Maule',                                lat:-35.55, lng:-72.05 },
+];
+
+// Generador de heatmap: nube gaussiana alrededor de cada cluster
+function gaussian() { // ~N(0,1)
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+}
+
+function buildHeatPoints(){
+  const pts = [];
+  COMUNAS.forEach(c => {
+    // intensidad alta -> más puntos y más densos
+    const n = Math.round(40 + c.weight * 360);
+    const spread = c.big ? 0.085 : 0.045; // grados aprox
+    for (let i = 0; i < n; i++) {
+      const dx = gaussian() * spread;
+      const dy = gaussian() * spread * 0.85;
+      // peso decae con distancia al centro (más rojo en el núcleo)
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const fall = Math.exp(-dist*8);
+      const w = Math.max(0.05, Math.min(1, c.weight * (0.4 + 0.6 * fall) + (Math.random()*0.1 - 0.05)));
+      pts.push([c.lat + dy, c.lng + dx, w]);
+    }
+  });
+  // ruido difuso de fondo (puntos verdes/amarillos dispersos)
+  for (let i = 0; i < 90; i++){
+    const lat = -34.0 - Math.random()*2.4;
+    const lng = -72.6 + Math.random()*1.9;
+    pts.push([lat, lng, 0.08 + Math.random()*0.12]);
+  }
+  return pts;
+}
+
+/* ===========================
+   MAPA — Leaflet
+   =========================== */
+const map = L.map('map', {
+  center: [-35.05, -71.30],
+  zoom: 8,
+  minZoom: 7,
+  maxZoom: 12,
+  zoomControl: true,
+  attributionControl: true,
+  preferCanvas: true,
+  zoomSnap: 0.25,
+});
+
+// Tiles — Carto Positron (light, desaturado, institucional)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap · © CARTO',
+  subdomains: 'abcd',
+  maxZoom: 19,
+}).addTo(map);
+
+// Capa de calor
+let heatLayer = L.heatLayer(buildHeatPoints(), {
+  radius: 28,
+  blur: 26,
+  maxZoom: 12,
+  minOpacity: 0.35,
+  max: 1.0,
+  gradient: {
+    0.10: '#2bb673',   // verde
+    0.35: '#a8d24a',   // verde-lima
+    0.55: '#ffd400',   // amarillo
+    0.75: '#ff8a1f',   // naranja
+    0.92: '#e63946',   // rojo
+    1.00: '#b00020',   // rojo profundo
+  }
+}).addTo(map);
+
+// Re-render heat al cambiar zoom (suave)
+map.on('zoomstart', () => { heatLayer.setOptions({ minOpacity: 0.25 }); });
+map.on('zoomend',   () => {
+  const z = map.getZoom();
+  heatLayer.setOptions({
+    radius: 18 + (z - 7) * 5,
+    blur:   18 + (z - 7) * 5,
+    minOpacity: 0.35,
+  });
+});
+
+// Markers de ciudades (pin + nombre)
+COMUNAS.forEach(c => {
+  const html = `<div class="pin"></div>`;
+  L.marker([c.lat, c.lng], {
+    icon: L.divIcon({ className:'city-label', html, iconSize:[10,10], iconAnchor:[5,5] }),
+    interactive: false,
+    keyboard: false,
+  }).addTo(map);
+});
+
+// (Labels de regiones omitidos — el tile base ya muestra los nombres)
+
+/* ===========================
+   INTERACTIVIDAD
+   =========================== */
+
+// Refrescar datos
+const refreshBtn = document.getElementById('refreshBtn');
+const toast = document.getElementById('toast');
+const toastText = document.getElementById('toastText');
+const totalEl = document.getElementById('totalCases');
+const topEl   = document.getElementById('topCount');
+const updEl   = document.getElementById('updTime');
+
+function showToast(msg, ms=1400){
+  toastText.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), ms);
+}
+
+refreshBtn.addEventListener('click', () => {
+  refreshBtn.classList.add('spinning');
+  showToast('Actualizando datos…', 1300);
+
+  // regenerar heatmap
+  setTimeout(() => {
+    heatLayer.setLatLngs(buildHeatPoints());
+    // mover ligeramente los totales
+    const delta = Math.floor(Math.random()*40 - 20);
+    const newTotal = 1489 + delta;
+    totalEl.textContent = newTotal.toLocaleString('es-CL');
+    const tc = 312 + Math.floor(Math.random()*16 - 8);
+    topEl.textContent = tc;
+    updEl.textContent = 'hace un momento';
+    refreshBtn.classList.remove('spinning');
+    showToast('Datos actualizados', 1200);
+  }, 1100);
+});
+
+// Buscador
+const searchInput = document.getElementById('searchInput');
+const searchGo = document.getElementById('searchGo');
+
+function doSearch(){
+  const q = searchInput.value.trim().toLowerCase();
+  if(!q){ searchInput.focus(); return; }
+
+  // coordenadas: "lat,lng"
+  const m = q.match(/^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/);
+  if(m){
+    const lat = parseFloat(m[1]), lng = parseFloat(m[3]);
+    map.flyTo([lat,lng], 11, { duration:1.2 });
+    showToast(`Centrando en ${lat.toFixed(3)}, ${lng.toFixed(3)}`);
+    return;
+  }
+  // por nombre de comuna
+  const hit = COMUNAS.find(c => c.name.toLowerCase().includes(q));
+  if(hit){
+    map.flyTo([hit.lat, hit.lng], 11, { duration:1.2 });
+    showToast(`Centrando en ${hit.name} · ${hit.count} casos`);
+  } else {
+    showToast('Sin resultados para "'+searchInput.value+'"');
+  }
+}
+searchGo.addEventListener('click', doSearch);
+searchInput.addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
+
+// Drawer (hamburguesa)
+const drawer = document.getElementById('drawer');
+const drawerBack = document.getElementById('drawerBack');
+document.getElementById('menuBtn').addEventListener('click', () => {
+  drawer.classList.add('open'); drawerBack.classList.add('open');
+  drawer.setAttribute('aria-hidden','false');
+});
+const closeDrawer = () => {
+  drawer.classList.remove('open'); drawerBack.classList.remove('open');
+  drawer.setAttribute('aria-hidden','true');
+};
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+drawerBack.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer(); });
+
+// Tick de "última actualización"
+let secs = 120;
+setInterval(()=>{
+  secs += 1;
+  if(updEl.textContent.includes('momento')) return;
+  const m = Math.floor(secs/60);
+  updEl.textContent = m < 1 ? `hace ${secs}s` : `hace ${m} min`;
+}, 1000);
+</script>
+</body>
+</html>

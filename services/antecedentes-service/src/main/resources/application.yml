@@ -1,0 +1,82 @@
+# =============================================================================
+# antecedentes-service (SMID 6.8 - Antecedentes y Hallazgos)
+# Configuracion base. Los valores sensibles se inyectan por variables de entorno.
+# Tras StripPrefix=1 en el Gateway, el servicio expone /antecedentes/**.
+# =============================================================================
+server:
+  port: ${SERVER_PORT:8094}
+
+spring:
+  application:
+    name: antecedentes-service
+
+  datasource:
+    # tinyInt1isBit=true: TINYINT(1) se lee como boolean (override #4).
+    url: ${DB_URL:jdbc:mysql://localhost:3306/db_antecedentes?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&tinyInt1isBit=true}
+    username: ${DB_USER:smid}
+    password: ${DB_PASSWORD:smid}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      # Flyway es el unico dueno del esquema; Hibernate solo valida (override).
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+        format_sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:smid}
+    password: ${RABBITMQ_PASSWORD:smid}
+    virtual-host: ${RABBITMQ_VHOST:/}
+
+# -----------------------------------------------------------------------------
+# Configuracion propia del cluster SMID
+# -----------------------------------------------------------------------------
+smid:
+  jwt:
+    # JWT_SECRET se comparte byte a byte con el Gateway (HS256, minimo 32 bytes).
+    kid-activo: ${JWT_KID_ACTIVO:smid-hs256-1}
+    secreto-activo: ${JWT_SECRET:}
+    kid-previo: ${JWT_KID_PREVIO:}
+    secreto-previo: ${JWT_SECRET_PREVIO:}
+    issuer: ${JWT_ISSUER:smid-auth}
+    audience: ${JWT_AUDIENCE:smid-servicios}
+
+  seguridad:
+    # Roles habilitados para devolver/aprobar/rechazar fichas y gestionar hallazgos.
+    roles-revision: ${ROLES_REVISION:JEFATURA_UNIDAD,COORDINACION_NACIONAL}
+    # Roles habilitados para escribir tablas de referencia.
+    roles-admin: ${ROLES_ADMIN:ADMINISTRADOR,COORDINACION_NACIONAL}
+
+  cifrado:
+    # aes-gcm (produccion) | none (passthrough, solo desarrollo con datos sinteticos).
+    relato: ${CIFRADO_RELATO:aes-gcm}
+
+  eventos:
+    # log (por defecto) | rabbitmq.
+    transporte: ${EVENTOS_TRANSPORTE:log}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    cl.smid.antecedentes: ${LOG_LEVEL:INFO}

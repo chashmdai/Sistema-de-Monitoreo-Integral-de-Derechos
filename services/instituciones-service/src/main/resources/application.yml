@@ -1,0 +1,82 @@
+# =============================================================================
+# instituciones-service (SMID 6.10) — Configuración base
+# -----------------------------------------------------------------------------
+# Este archivo SOLO contiene referencias ${VARIABLE}. Los secretos provienen
+# exclusivamente de variables de entorno (ver .env.example). No versionar
+# secretos reales.
+#
+# Notas de la URL JDBC:
+#   - tinyInt1isBit=true     => los TINYINT(1) se leen como boolean (override #5).
+#   - connectionTimeZone=UTC => coherencia de marcas temporales DATETIME(6) UTC.
+# =============================================================================
+spring:
+  application:
+    name: instituciones-service
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/db_instituciones?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&tinyInt1isBit=true&connectionTimeZone=UTC}
+    username: ${DB_USER:smid_instituciones}
+    password: ${DB_PASSWORD}
+    hikari:
+      pool-name: instituciones-pool
+      maximum-pool-size: ${DB_POOL_MAX:10}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  rabbitmq:
+    host: ${RABBIT_HOST:localhost}
+    port: ${RABBIT_PORT:5672}
+    username: ${RABBIT_USER:guest}
+    password: ${RABBIT_PASSWORD:guest}
+    virtual-host: ${RABBIT_VHOST:/}
+
+server:
+  port: ${SERVER_PORT:8093}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# -----------------------------------------------------------------------------
+# Configuración propia del ecosistema SMID
+# -----------------------------------------------------------------------------
+smid:
+  jwt:
+    # Par fijo activo + par previo opcional para ventana de rotación (override #10).
+    kid-activo: ${JWT_KID_ACTIVO:smid-2026-06}
+    secreto-activo: ${JWT_SECRET}
+    kid-previo: ${JWT_KID_PREVIO:}
+    secreto-previo: ${JWT_SECRET_PREVIO:}
+    issuer: ${JWT_ISSUER:smid-auth}
+    audiencia: ${JWT_AUDIENCE:smid-servicios}
+
+  seguridad:
+    # Roles que habilitan ESCRITURAS sobre datos de referencia (override #6).
+    roles-admin: ${ROLES_ADMIN:ADMIN_INSTITUCIONES,COORDINACION_NACIONAL}
+
+  eventos:
+    # log (por defecto) | rabbitmq (override #8).
+    transporte: ${EVENTOS_TRANSPORTE:log}
+
+logging:
+  level:
+    AUDIT.SMID.INSTITUCIONES: INFO

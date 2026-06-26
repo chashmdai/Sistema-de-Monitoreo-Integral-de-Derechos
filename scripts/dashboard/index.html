@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMID · Panel de microservicios</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo" role="img" aria-label="SMID, Sistema de Monitoreo Integral de Derechos">
+        <img class="brand-logo-img brand-logo-dark" src="/assets/smid-logo-dark.png" alt="" aria-hidden="true">
+        <img class="brand-logo-img brand-logo-light" src="/assets/smid-logo-light.png" alt="" aria-hidden="true">
+      </div>
+      <div class="brand-copy">
+        <h1>Panel de microservicios</h1>
+        <p id="last-update" class="muted">Cargando…</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="help-btn" class="ghost" title="Cómo funciona el ecosistema">¿Cómo funciona?</button>
+      <button id="doctor-btn" class="ghost">Diagnóstico</button>
+      <button id="token-btn" class="ghost">Obtener token</button>
+      <button id="e2e-btn" class="ghost">Flujo E2E</button>
+      <button id="theme-btn" class="icon" title="Cambiar tema"></button>
+      <button id="refresh-btn" class="primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Refrescar</button>
+      <button id="auto-btn" class="ghost" aria-pressed="true">Auto</button>
+    </div>
+  </header>
+
+  <!-- Infraestructura + métricas -->
+  <section class="strip">
+    <div class="infra" id="infra-row"></div>
+    <div class="metrics">
+      <article class="metric up"><strong id="metric-up">0</strong><span>UP</span></article>
+      <article class="metric watch"><strong id="metric-watch">0</strong><span>Atención</span></article>
+      <article class="metric down"><strong id="metric-down">0</strong><span>Down</span></article>
+      <article class="metric"><strong id="metric-memory">0</strong><span>MB</span></article>
+    </div>
+  </section>
+
+  <!-- Cómo funciona (plegable) -->
+  <section id="help-panel" class="help-panel" hidden>
+    <div class="help-grid">
+      <div>
+        <h3>Topología</h3>
+        <pre class="topology">
+React ──Bearer──▶  API Gateway :8080  (valida JWT · enruta /api/*)
+                          │
+   ┌──────────┬──────────┼───────────┬────────────┐
+ auth       catálogo   personas   requerimientos   …
+ :8081       :8087      :8088        :8089
+        </pre>
+      </div>
+      <div>
+        <h3>Cadena de eventos (RabbitMQ)</h3>
+        <pre class="topology">
+requerimientos
+   └─(requerimiento.asignado)─▶ casos
+                                  └─(caso.abierto)─▶ vulneraciones
+                                                  └▶ productos
+        </pre>
+      </div>
+      <div>
+        <h3>Para empezar</h3>
+        <ol class="help-list">
+          <li>Levanta <b>MySQL</b> (y RabbitMQ si pruebas el flujo de eventos).</li>
+          <li>Pulsa <b>Diagnóstico</b> para verificar entorno y coherencia del JWT.</li>
+          <li>Pulsa <b>Levantar todo</b>: arranca por niveles (infra → núcleo → gateway).</li>
+          <li>Usa <b>Obtener token</b> para autenticarte y probar las rutas <code>/api/*</code>.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Control global -->
+  <section class="control">
+    <div class="control-fields">
+      <label>Perfil
+        <select id="profile" title="local: dev con semilla, trazas SQL y secretos demo · dev: integración (solo el Gateway lo tiene afinado) · prod: endurecido, sin semilla/Swagger, secretos por entorno">
+          <option value="local" selected>local · desarrollo</option>
+          <option value="dev">dev · integración</option>
+          <option value="prod">prod · producción</option>
+        </select>
+      </label>
+      <label>App heap
+        <select id="app-xmx" title="Memoria máxima (-Xmx) de cada microservicio Spring Boot">
+          <option value="256m">256m</option>
+          <option value="384m">384m</option>
+          <option value="512m" selected>512m</option>
+          <option value="768m">768m</option>
+          <option value="1g">1g</option>
+        </select>
+      </label>
+      <label>Maven heap
+        <select id="maven-xmx" title="Memoria máxima (-Xmx) del proceso Maven que compila y arranca">
+          <option value="256m">256m</option>
+          <option value="384m" selected>384m</option>
+          <option value="512m">512m</option>
+        </select>
+      </label>
+      <label class="check"><input id="include-optional" type="checkbox"> incluir opcionales</label>
+      <label class="check"><input id="use-example-env" type="checkbox"> permitir .env.example</label>
+    </div>
+    <div class="control-actions">
+      <button id="start-all" class="primary"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z"/></svg>Levantar todo</button>
+      <button id="stop-all" class="danger"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>Apagar todo</button>
+      <button id="restart-all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Reiniciar</button>
+    </div>
+  </section>
+  <p class="hint">Los heaps y el perfil se aplican al levantar/reiniciar; no cambian un JVM ya corriendo. «Levantar todo» respeta el orden de arranque por niveles.</p>
+
+  <main class="layout">
+    <section class="services">
+      <div class="toolbar">
+        <input id="filter" type="search" placeholder="Filtrar por nombre, módulo o puerto…" autocomplete="off">
+        <div class="seg">
+          <button data-mode="all" class="active">Todos</button>
+          <button data-mode="up">UP</button>
+          <button data-mode="down">Down</button>
+        </div>
+      </div>
+      <div id="tiers"></div>
+    </section>
+
+    <aside class="detail">
+      <div class="detail-head">
+        <div>
+          <h2 id="detail-title">Selecciona un servicio</h2>
+          <p id="detail-sub" class="muted">Estado, enlaces y logs en vivo</p>
+        </div>
+        <span id="detail-badge" class="badge down">—</span>
+      </div>
+
+      <div class="detail-actions">
+        <a id="health-link" class="link" target="_blank" rel="noreferrer">Health</a>
+        <a id="swagger-link" class="link" target="_blank" rel="noreferrer">Swagger</a>
+        <button id="svc-start" class="primary sm" title="Levantar"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M7 5.5v13a1 1 0 0 0 1.5.87l11-6.5a1 1 0 0 0 0-1.74l-11-6.5A1 1 0 0 0 7 5.5Z"/></svg></button>
+        <button id="svc-stop" class="danger sm" title="Apagar"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></button>
+        <button id="svc-restart" class="sm" title="Reiniciar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
+      </div>
+
+      <dl class="facts">
+        <div><dt>Módulo</dt><dd id="fact-module">-</dd></div>
+        <div><dt>Ruta gateway</dt><dd id="fact-route">-</dd></div>
+        <div><dt>Base de datos</dt><dd id="fact-db">-</dd></div>
+        <div><dt>Puerto</dt><dd id="fact-port">-</dd></div>
+        <div><dt>PID</dt><dd id="fact-pid">-</dd></div>
+        <div><dt>Memoria</dt><dd id="fact-memory">-</dd></div>
+      </dl>
+      <p id="fact-events" class="events muted"></p>
+
+      <div class="log-toolbar">
+        <div class="seg">
+          <button id="tab-out" class="active">stdout</button>
+          <button id="tab-err">stderr</button>
+        </div>
+        <div class="log-tools">
+          <input id="log-filter" type="search" placeholder="buscar en log…" autocomplete="off">
+          <button id="live-btn" class="ghost" aria-pressed="false">En vivo</button>
+          <button id="wrap-btn" class="ghost" aria-pressed="true">Wrap</button>
+        </div>
+      </div>
+      <div id="log-path" class="log-path muted">Sin log seleccionado</div>
+      <pre id="log-output" class="log wrap">Selecciona un servicio.</pre>
+    </aside>
+  </main>
+
+  <!-- Modal diagnóstico -->
+  <div id="doctor-modal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Diagnóstico del entorno</h3>
+        <button class="icon ghost" data-close title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div id="doctor-body" class="modal-body">Ejecutando…</div>
+    </div>
+  </div>
+
+  <!-- Modal token -->
+  <div id="token-modal" class="modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>Token de acceso (usuario semilla)</h3>
+        <button class="icon ghost" data-close title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="modal-body">
+        <label class="field">Contraseña (SEED_PASSWORD)
+          <input id="token-pass" type="text" placeholder="Smid.Local.2026">
+        </label>
+        <button id="token-go" class="primary">Iniciar sesión</button>
+        <div id="token-result" class="token-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Flujo E2E -->
+  <div id="e2e-modal" class="modal" hidden>
+    <div class="modal-card e2e-card">
+      <div class="modal-head">
+        <h3>Flujo E2E del ecosistema</h3>
+        <div class="e2e-head-actions">
+          <span id="e2e-status" class="muted">listo</span>
+          <button id="e2e-run" class="primary">Ejecutar flujo</button>
+          <button class="icon ghost" data-close title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p class="e2e-intro">Recorre el ciclo real de un caso por los microservicios y muestra cómo nacen los datos. Las etapas con <b>⚡</b> ocurren <b>solas</b>, disparadas por eventos (RabbitMQ): nadie las llama directamente.</p>
+        <div id="e2e-pipeline" class="e2e-pipeline"></div>
+        <div class="e2e-grid">
+          <div>
+            <div class="e2e-subtitle">Datos generados</div>
+            <div id="e2e-data" class="e2e-data"><div class="empty">Pulsa «Ejecutar flujo».</div></div>
+          </div>
+          <div>
+            <div class="e2e-subtitle">Bitácora</div>
+            <pre id="e2e-log" class="e2e-log">—</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>

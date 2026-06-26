@@ -1,0 +1,233 @@
+{
+  "$schema": "./services.schema.json",
+  "description": "Fuente unica de verdad del ecosistema SMID/SIGER. La leen siger-services.ps1 y dashboard_server.py. Agregar un servicio = agregar una entrada aqui.",
+  "paths": {
+    "servicesRoot": "services"
+  },
+  "tiers": {
+    "perimetro": { "label": "Perimetro", "order": 1, "description": "Frontera unica de entrada" },
+    "identidad": { "label": "Identidad", "order": 2, "description": "Emision de credenciales" },
+    "nucleo": { "label": "Nucleo Fundacional", "order": 3, "description": "Servicios de negocio" },
+    "referencia": { "label": "Datos de referencia", "order": 4, "description": "Catalogos nacionales / opcionales" },
+    "legado": { "label": "Sistemas IA (strangler)", "order": 5, "description": "Motores de IA heredados (ESNNA, SGS) integrados tras el Gateway" },
+    "frontend": { "label": "Frontends", "order": 6, "description": "Aplicaciones de UI (Vite/npm) que consumen el API Gateway" }
+  },
+  "infra": [
+    {
+      "key": "mysql",
+      "name": "MySQL 8",
+      "host": "127.0.0.1",
+      "port": 3306,
+      "requiredBy": "Todos los servicios de negocio (cada uno con su propia BD; arrancan con ddl-auto=validate)."
+    },
+    {
+      "key": "rabbitmq",
+      "name": "RabbitMQ",
+      "host": "127.0.0.1",
+      "port": 5672,
+      "mgmtPort": 15672,
+      "requiredBy": "Cadena de eventos requerimientos -> casos -> vulneraciones/productos. En perfil local casi todos publican por 'log'."
+    }
+  ],
+  "jwt": {
+    "secretVars": ["JWT_SECRET", "JWT_SECRET_ACTIVO"],
+    "kidVars": ["JWT_KID", "JWT_KID_ACTIVO"],
+    "issuerVars": ["JWT_ISSUER"],
+    "audienceVars": ["JWT_AUDIENCE", "JWT_AUDIENCIA"]
+  },
+  "auth": {
+    "service": "smid-auth",
+    "loginPath": "/api/auth/login",
+    "directLoginPath": "/auth/login",
+    "email": "admin@defensorianinez.cl",
+    "seedPasswordVar": "SEED_PASSWORD",
+    "defaultPassword": "Smid.Local.2026"
+  },
+  "services": [
+    {
+      "name": "smid-auth",
+      "module": "6.1",
+      "displayName": "Identidad y Acceso",
+      "domain": "Emite, renueva y revoca tokens JWT (HS256). Fuente unica de Sede -> Unidad -> Profesional.",
+      "tier": "identidad",
+      "port": 8081,
+      "optional": false,
+      "startLevel": 1,
+      "gatewayRoute": "/api/auth",
+      "db": "db_auth",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": [] }
+    },
+    {
+      "name": "catalogo-service",
+      "module": "6.7",
+      "displayName": "Catalogo de Derechos",
+      "domain": "Taxonomia jerarquica de derechos vulnerados y sus causas. Dato de referencia, sin datos personales.",
+      "tier": "nucleo",
+      "port": 8087,
+      "optional": false,
+      "startLevel": 1,
+      "gatewayRoute": "/api/catalogo",
+      "db": "db_catalogo",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": [] }
+    },
+    {
+      "name": "personas-service",
+      "module": "6.2",
+      "displayName": "Personas",
+      "domain": "Registro maestro de NNA, adultos, personas juridicas y testigos. Acceso territorial registro a registro.",
+      "tier": "nucleo",
+      "port": 8088,
+      "optional": false,
+      "startLevel": 1,
+      "gatewayRoute": "/api/personas",
+      "db": "db_personas",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": ["persona.creada", "persona.actualizada"] }
+    },
+    {
+      "name": "requerimientos-service",
+      "module": "6.3",
+      "displayName": "Requerimientos",
+      "domain": "Ingreso, edicion, envio, admisibilidad y asignacion de requerimientos.",
+      "tier": "nucleo",
+      "port": 8089,
+      "optional": false,
+      "startLevel": 2,
+      "gatewayRoute": "/api/requerimientos",
+      "db": "db_requerimientos",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": ["requerimiento.asignado", "requerimiento.inadmisible", "requerimiento.respondido"] }
+    },
+    {
+      "name": "casos-service",
+      "module": "6.4",
+      "displayName": "Casos",
+      "domain": "Expediente que nace de un requerimiento asignado. Primer consumidor de eventos asincronos.",
+      "tier": "nucleo",
+      "port": 8090,
+      "optional": false,
+      "startLevel": 3,
+      "gatewayRoute": "/api/casos",
+      "db": "db_casos",
+      "needs": ["mysql", "rabbitmq"],
+      "events": { "consumes": ["requerimiento.asignado"], "publishes": ["caso.abierto", "caso.cerrado", "caso.archivado"] }
+    },
+    {
+      "name": "vulneraciones-service",
+      "module": "6.5",
+      "displayName": "Vulneraciones / FIR",
+      "domain": "Ficha Interna Reservada del caso. Se materializa al consumir caso.abierto (si requiereFichaReservada).",
+      "tier": "nucleo",
+      "port": 8091,
+      "optional": false,
+      "startLevel": 4,
+      "gatewayRoute": "/api/vulneraciones",
+      "db": "db_vulneraciones",
+      "needs": ["mysql", "rabbitmq"],
+      "events": { "consumes": ["caso.abierto"], "publishes": ["ficha.abierta", "ficha.cerrada"] }
+    },
+    {
+      "name": "productos-service",
+      "module": "6.6",
+      "displayName": "Productos y Tareas",
+      "domain": "Productos (informes, oficios, derivaciones) y tareas asociados a un caso.",
+      "tier": "nucleo",
+      "port": 8092,
+      "optional": false,
+      "startLevel": 4,
+      "gatewayRoute": "/api/productos",
+      "db": "db_productos",
+      "needs": ["mysql"],
+      "events": { "consumes": ["caso.abierto"], "publishes": ["producto.emitido", "tarea.completada"] }
+    },
+    {
+      "name": "antecedentes-service",
+      "module": "6.8",
+      "displayName": "Antecedentes y Hallazgos",
+      "domain": "Aprendizaje institucional, fichas de antecedentes, hallazgos y referencias DDN.",
+      "tier": "nucleo",
+      "port": 8094,
+      "optional": true,
+      "startLevel": 4,
+      "gatewayRoute": "/api/antecedentes",
+      "db": "db_antecedentes",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": ["ficha.creada", "ficha.aprobada", "hallazgo.creado", "hallazgo.estado"] }
+    },
+    {
+      "name": "instituciones-service",
+      "module": "6.10",
+      "displayName": "Instituciones",
+      "domain": "Catalogo nacional de instituciones, tipos y puntos focales. Servicio hoja (no llama a otros).",
+      "tier": "referencia",
+      "port": 8093,
+      "optional": true,
+      "startLevel": 1,
+      "gatewayRoute": "/api/instituciones",
+      "db": "db_instituciones",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": ["institucion.creada"] }
+    },
+    {
+      "name": "smid-api-gateway",
+      "module": "",
+      "displayName": "API Gateway",
+      "domain": "Frontera unica: valida la firma/claims del JWT, normaliza errores y enruta hacia cada servicio.",
+      "tier": "perimetro",
+      "port": 8080,
+      "optional": false,
+      "startLevel": 5,
+      "gatewayRoute": "/api",
+      "db": null,
+      "needs": [],
+      "events": { "consumes": [], "publishes": [] }
+    },
+    {
+      "name": "esnna-service",
+      "module": "",
+      "displayName": "ESNNA · Motor IA",
+      "domain": "Motor de IA (OpenAI) que extrae y consolida casos ESNNA desde PDFs. Sistema heredado integrado tras el Gateway; valida el JWT de smid-auth (HS256).",
+      "tier": "legado",
+      "port": 8086,
+      "optional": true,
+      "startLevel": 4,
+      "gatewayRoute": "/api/esnna",
+      "db": "db_esnna",
+      "needs": ["mysql"],
+      "events": { "consumes": [], "publishes": [] }
+    },
+    {
+      "name": "sgs-service",
+      "module": "",
+      "displayName": "SGS · Gestion y Seguimiento IA",
+      "domain": "Sistema de Gestion y Seguimiento: evalua recomendaciones y oficios con IA (OpenAI). Heredado; valida el JWT de smid-auth. Esquema con Flyway (V1). Requiere RabbitMQ y MinIO.",
+      "tier": "legado",
+      "port": 8083,
+      "optional": true,
+      "startLevel": 4,
+      "gatewayRoute": "/api/sgs",
+      "db": "db_sgs",
+      "needs": ["mysql", "rabbitmq"],
+      "events": { "consumes": [], "publishes": [] }
+    },
+    {
+      "name": "frontend-smid",
+      "kind": "web",
+      "module": "",
+      "displayName": "Frontend SMID",
+      "domain": "SPA del ecosistema (Vite + React + Mantine). Consume el API Gateway; en dev proxya /api -> :8080. 'npm run dev' en :3000.",
+      "tier": "frontend",
+      "port": 3000,
+      "path": "frontends/smid",
+      "command": "npm run dev",
+      "url": "http://localhost:3000/",
+      "optional": true,
+      "startLevel": 6,
+      "db": null,
+      "needs": ["smid-api-gateway"],
+      "events": { "consumes": [], "publishes": [] }
+    }
+  ]
+}

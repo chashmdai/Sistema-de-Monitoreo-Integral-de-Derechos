@@ -1,0 +1,10 @@
+target/
+*.class
+.idea/
+*.iml
+.vscode/
+
+# Entorno (NUNCA versionar secretos)
+.env
+*.env.local
+*.log

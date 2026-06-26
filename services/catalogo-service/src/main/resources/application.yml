@@ -1,0 +1,103 @@
+# ============================================================================
+# SMID 6.7 — Catálogo de Derechos · configuración de la aplicación
+# ----------------------------------------------------------------------------
+# Toda la configuración sensible o dependiente del entorno se externaliza vía
+# variables de entorno (${VAR}). Ver .env.example para la lista completa.
+# Las migraciones de esquema las gestiona Flyway; Hibernate solo valida.
+# ============================================================================
+
+server:
+  port: 8087
+
+spring:
+  application:
+    name: catalogo-service
+
+  # Java 21: hilos virtuales para mayor concurrencia en cargas de E/S.
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: catalogo-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    # NUNCA 'update': Flyway es el único dueño del esquema (cierra DT-5).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        # Todas las marcas de tiempo se persisten y leen en UTC (Núcleo 2.10).
+        jdbc:
+          "[time_zone]": UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  jackson:
+    # Fechas/instantes en ISO-8601, no como número de época (sobre de error 2.5, eventos 2.8).
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: UTC
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# ----------------------------------------------------------------------------
+# Configuración propia del servicio
+# ----------------------------------------------------------------------------
+smid:
+  jwt:
+    # Validación independiente del token (defensa en profundidad, DT-3).
+    kid-activo: ${JWT_KID}
+    secreto-activo: ${JWT_SECRET}
+    # Clave previa: opcional, solo durante una rotación de claves.
+    kid-previo: ${JWT_KID_PREVIO:}
+    secreto-previo: ${JWT_SECRET_PREVIO:}
+    issuer: ${JWT_ISSUER:smid-auth}
+    audience: ${JWT_AUDIENCE:smid-servicios}
+  seguridad:
+    # Roles que confieren Administración (escritura). Lista separada por comas.
+    roles-administracion: ${SMID_SEGURIDAD_ROLES_ADMINISTRACION:ADMIN_NACIONAL,ADMIN_CATALOGO,ADMINISTRADOR}
+
+logging:
+  level:
+    # Canal de auditoría de eventos de dominio (Núcleo 2.8).
+    "[AUDIT.SMID.CATALOGO]": INFO
+
+# ============================================================================
+# Perfil 'local': trazas SQL y logs de depuración para desarrollo.
+# Activar con SPRING_PROFILES_ACTIVE=local
+# ============================================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        "[format_sql]": true
+
+logging:
+  level:
+    "[cl.smid.catalogo]": DEBUG
+    "[org.hibernate.SQL]": DEBUG
+    "[org.springframework.security]": INFO

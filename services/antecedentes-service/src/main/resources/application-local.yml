@@ -1,0 +1,34 @@
+# =============================================================================
+# Perfil local (desarrollo con datos sinteticos). Activar con:
+#   --spring.profiles.active=local
+# NUNCA usar estos valores en produccion.
+# =============================================================================
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/db_antecedentes?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&tinyInt1isBit=true}
+    username: ${DB_USER:smid}
+    password: ${DB_PASSWORD:smid}
+
+smid:
+  jwt:
+    kid-activo: ${JWT_KID_ACTIVO:smid-hs256-1}
+    # Secreto de desarrollo (>= 32 bytes). Reemplazar por JWT_SECRET en entornos reales.
+    secreto-activo: ${JWT_SECRET:clave-desarrollo-smid-antecedentes-6-8-no-produccion}
+    issuer: ${JWT_ISSUER:smid-auth}
+    audience: ${JWT_AUDIENCE:smid-servicios}
+
+  seguridad:
+    roles-revision: ${ROLES_REVISION:JEFATURA_UNIDAD,COORDINACION_NACIONAL}
+    roles-admin: ${ROLES_ADMIN:ADMINISTRADOR,COORDINACION_NACIONAL}
+
+  cifrado:
+    # Passthrough en desarrollo: el relato se persiste en claro (datos sinteticos).
+    relato: ${CIFRADO_RELATO:none}
+
+  eventos:
+    transporte: ${EVENTOS_TRANSPORTE:log}
+
+logging:
+  level:
+    cl.smid.antecedentes: ${LOG_LEVEL:DEBUG}
+    org.hibernate.SQL: DEBUG

@@ -1,0 +1,20 @@
+# ============================================================================
+# Perfil 'local' — desarrollo. Activar con: --spring.profiles.active=local
+# Añade trazas verbosas; no cambia el contrato ni el esquema.
+# ============================================================================
+
+spring:
+  jpa:
+    properties:
+      "[hibernate.format_sql]": true
+    # Muestra el SQL generado (sólo en desarrollo).
+    show-sql: true
+
+logging:
+  level:
+    "[cl.smid.personas]": DEBUG
+    # SQL y parámetros de Hibernate para depurar consultas.
+    "[org.hibernate.SQL]": DEBUG
+    "[org.hibernate.orm.jdbc.bind]": TRACE
+    # Flujo de seguridad al diagnosticar problemas de token.
+    "[org.springframework.security]": DEBUG

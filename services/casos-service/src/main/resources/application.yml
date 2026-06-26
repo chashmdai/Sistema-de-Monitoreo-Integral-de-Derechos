@@ -1,0 +1,102 @@
+## =====================================================================================
+## casos-service (SMID 6.4) — Configuración base.
+## Solo marcadores ${VAR}: ningún secreto en claro. Para desarrollo local usar el perfil
+## "local" (application-local.yml), que aporta valores no sensibles de conveniencia.
+## =====================================================================================
+
+server:
+  port: ${SERVER_PORT:8090}
+
+spring:
+  application:
+    name: casos-service
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:db_casos}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+    username: ${DB_USER:smid}
+    password: ${DB_PASSWORD}
+    hikari:
+      pool-name: casos-pool
+      maximum-pool-size: ${DB_POOL_MAX:10}
+
+  jpa:
+    hibernate:
+      # NUNCA "update": el esquema lo gobierna Flyway; Hibernate solo valida.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      # Marcas de tiempo en UTC (columnas DATETIME(6)).
+      "[hibernate.jdbc.time_zone]": UTC
+      "[hibernate.format_sql]": false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      # Tolerancia ante evoluciones del contrato de eventos del productor.
+      fail-on-unknown-properties: false
+    time-zone: UTC
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    listener:
+      simple:
+        acknowledge-mode: auto
+        # Consumidor de un solo hilo: la reentrega es secuencial y el pre-chequeo basta para la
+        # idempotencia dentro de una instancia.
+        concurrency: 1
+        max-concurrency: 1
+        # Tras agotar reintentos, se rechaza sin reencolar y el broker deriva a la DLQ.
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
+
+## ----------------------------- Propiedades del dominio SMID -----------------------------
+smid:
+  seguridad:
+    jwt:
+      issuer: ${JWT_ISSUER:smid-auth}
+      audience: ${JWT_AUDIENCE:smid-servicios}
+      # Clave activa (obligatoria). Sin valor por defecto: debe inyectarse por entorno.
+      kid-activo: ${JWT_KID}
+      secreto-activo: ${JWT_SECRET}
+      # Clave previa (opcional): ventana de rotación.
+      kid-previo: ${JWT_KID_PREVIO:}
+      secreto-previo: ${JWT_SECRET_PREVIO:}
+    roles-coordinacion: ${ROLES_COORDINACION:COORDINADOR,COORDINACION,ADMIN_SEDE,ADMIN_NACIONAL}
+
+  sedes:
+    codigo-defecto: ${CODIGO_SEDE_DEFECTO:SMID}
+    # Mapa alt_key de sede -> código corto. Inyectar por entorno o en application-local.yml:
+    #   SMID_SEDES_CODIGOS_<altkey>: RM
+    codigos: {}
+
+  eventos:
+    # rabbitmq (por defecto) habilita el listener; otro valor (p. ej. none) lo desactiva.
+    consumo: ${EVENTOS_CONSUMO:rabbitmq}
+    # rabbitmq publica en smid.eventos; log solo registra (desarrollo/pruebas).
+    transporte: ${EVENTOS_TRANSPORTE:rabbitmq}
+
+  expediente:
+    inicio-oficial: ${EXPEDIENTE_INICIO_OFICIAL:2027-01-01}
+
+  enriquecimiento:
+    activo: ${ENRIQUECIMIENTO_ACTIVO:false}
+    requerimientos-url: ${REQUERIMIENTOS_URL:}
+
+logging:
+  level:
+    "[cl.smid.casos]": ${LOG_LEVEL_CASOS:INFO}

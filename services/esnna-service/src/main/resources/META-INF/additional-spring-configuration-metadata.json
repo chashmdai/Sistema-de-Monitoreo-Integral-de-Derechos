@@ -1,0 +1,147 @@
+{"properties": [
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.secret'"
+  },
+  {
+    "name": "esnna.security.issuer",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.security.issuer'"
+  },
+  {
+    "name": "esnna.security.audience",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.security.audience'"
+  },
+  {
+    "name": "esnna.security.claim-roles",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.security.claim-roles'"
+  },
+  {
+    "name": "esnna.security.rol-operacion",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.security.rol-operacion'"
+  },
+  {
+    "name": "esnna.security.rol-gestion",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.security.rol-gestion'"
+  },
+  {
+    "name": "openai.api.key",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.api.key'"
+  },
+  {
+    "name": "esnna.openai.modelo-extraccion",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.modelo-extraccion'"
+  },
+  {
+    "name": "esnna.openai.modelo-consolidacion",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.modelo-consolidacion'"
+  },
+  {
+    "name": "esnna.openai.reasoning-effort",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.reasoning-effort'"
+  },
+  {
+    "name": "esnna.openai.max-tokens-extraccion",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.max-tokens-extraccion'"
+  },
+  {
+    "name": "esnna.openai.max-tokens-consolidacion",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.max-tokens-consolidacion'"
+  },
+  {
+    "name": "esnna.openai.retry.max-intentos",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.retry.max-intentos'"
+  },
+  {
+    "name": "esnna.openai.retry.backoff-segundos",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.retry.backoff-segundos'"
+  },
+  {
+    "name": "esnna.openai.precio.extraccion-input",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.precio.extraccion-input'"
+  },
+  {
+    "name": "esnna.openai.precio.extraccion-output",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.precio.extraccion-output'"
+  },
+  {
+    "name": "esnna.openai.precio.consolidacion-input",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.precio.consolidacion-input'"
+  },
+  {
+    "name": "esnna.openai.precio.consolidacion-output",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.openai.precio.consolidacion-output'"
+  },
+  {
+    "name": "esnna.protocolo.version",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.protocolo.version'"
+  },
+  {
+    "name": "esnna.procesar.max-archivos",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.procesar.max-archivos'"
+  },
+  {
+    "name": "esnna.pdf.min-chars-utiles",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.pdf.min-chars-utiles'"
+  },
+  {
+    "name": "esnna.draft.ttl-minutos",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.draft.ttl-minutos'"
+  },
+  {
+    "name": "esnna.draft.max-entradas",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.draft.max-entradas'"
+  },
+  {
+    "name": "esnna.minio.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.minio.enabled'"
+  },
+  {
+    "name": "esnna.minio.endpoint",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.minio.endpoint'"
+  },
+  {
+    "name": "esnna.minio.access-key",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.minio.access-key'"
+  },
+  {
+    "name": "esnna.minio.secret-key",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.minio.secret-key'"
+  },
+  {
+    "name": "esnna.minio.bucket",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.minio.bucket'"
+  },
+  {
+    "name": "esnna.documentos.url-validez-minutos",
+    "type": "java.lang.String",
+    "description": "A description for 'esnna.documentos.url-validez-minutos'"
+  }
+]}

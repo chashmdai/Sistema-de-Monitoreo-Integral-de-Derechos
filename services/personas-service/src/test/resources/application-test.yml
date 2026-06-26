@@ -1,0 +1,29 @@
+# ============================================================================
+# Perfil 'test' — usado por la prueba de integración con Testcontainers.
+# El datasource (contenedor MySQL efímero) y las claves JWT se inyectan en
+# tiempo de ejecución vía @DynamicPropertySource desde la propia prueba, para
+# que el emisor de tokens de prueba y el validador compartan secreto y kid.
+# ============================================================================
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate          # Flyway crea el esquema sobre la BD vacía del contenedor.
+    properties:
+      "[hibernate.jdbc.time_zone]": UTC
+  flyway:
+    enabled: true
+
+smid:
+  # En pruebas, los eventos se emiten en modo 'log' (sin RabbitMQ).
+  eventos:
+    transporte: log
+
+management:
+  health:
+    rabbit:
+      enabled: false
+
+logging:
+  level:
+    "[cl.smid.personas]": INFO

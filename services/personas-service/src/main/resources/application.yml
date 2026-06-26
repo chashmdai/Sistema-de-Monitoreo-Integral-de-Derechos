@@ -1,0 +1,96 @@
+# ============================================================================
+# personas-service (6.2) · Núcleo Fundacional SMID
+# Configuración base. Los valores sensibles y específicos del entorno se toman
+# de variables de entorno (DT-2); aquí sólo se referencian con ${...}.
+# El perfil `local` (application-local.yml) añade trazas para desarrollo.
+# ============================================================================
+
+server:
+  port: 8088
+  # El servicio vive tras el Gateway, que elimina el prefijo /api (StripPrefix);
+  # internamente los controladores cuelgan de /personas.
+
+spring:
+  application:
+    name: personas-service
+
+  # ----- Hilos virtuales (Java 21): un hilo por petición, baratos y escalables -----
+  threads:
+    virtual:
+      enabled: true
+
+  # ----- Origen de datos (MySQL 8) -----
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/db_personas?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
+    username: ${DB_USER:smid}
+    password: ${DB_PASSWORD:smid}
+
+  # ----- JPA / Hibernate -----
+  jpa:
+    open-in-view: false           # Sin sesión abierta en la vista: las lecturas demarcan su transacción.
+    hibernate:
+      ddl-auto: validate          # Flyway es el dueño del esquema; Hibernate sólo valida el mapeo.
+    properties:
+      "[hibernate.jdbc.time_zone]": UTC # Persistencia de instantes en UTC, coherente con el resto del clúster.
+      "[hibernate.format_sql]": false
+
+  # ----- Flyway: dueño único del esquema. BD vacía → sólo crea estructura (V1). -----
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+
+  # ----- RabbitMQ (sólo se usa si smid.eventos.transporte=rabbitmq) -----
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+# ----- Observabilidad mínima para el orquestador detrás del Gateway -----
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    # El arranque NO depende de RabbitMQ: su salud no se incluye por defecto para no
+    # marcar el servicio como caído cuando el transporte de eventos es 'log'.
+    rabbit:
+      enabled: false
+
+# ============================================================================
+# Configuración propia del ecosistema SMID
+# ============================================================================
+smid:
+  # ----- Validación del token (defensa en profundidad, DT-3) -----
+  jwt:
+    issuer: ${JWT_ISSUER:smid-auth}
+    audience: ${JWT_AUDIENCE:smid-servicios}
+    # Clave de firma activa (obligatoria). El secreto se usa como clave HMAC desde sus
+    # bytes UTF-8; debe tener al menos 32 bytes para HS256.
+    activa:
+      kid: ${JWT_KID:smid-key-1}
+      secreto: ${JWT_SECRET}
+    # Clave previa (opcional): habilita rotación sin invalidar tokens en vuelo. Se activa
+    # sólo si se define JWT_KID_PREVIO; en blanco queda deshabilitada.
+    previa:
+      kid: ${JWT_KID_PREVIO:}
+      secreto: ${JWT_SECRET_PREVIO:}
+
+  # ----- Transporte de eventos de dominio hacia Auditoría -----
+  # 'log'      → escribe el evento como JSON en el logger de auditoría (por defecto).
+  # 'rabbitmq' → publica en el exchange 'smid.eventos' (requiere RabbitMQ disponible).
+  eventos:
+    transporte: ${EVENTOS_TRANSPORTE:log}
+
+# ----- Trazas -----
+logging:
+  level:
+    root: INFO
+    # Canal dedicado de auditoría usado por el publicador de eventos en modo 'log'.
+    "[AUDIT.SMID.PERSONAS]": INFO

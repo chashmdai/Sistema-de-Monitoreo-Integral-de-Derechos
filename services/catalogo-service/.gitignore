@@ -1,0 +1,29 @@
+# ===== Build =====
+target/
+!.mvn/wrapper/maven-wrapper.jar
+build/
+out/
+
+# ===== Variables de entorno (secretos) =====
+.env
+.env.*
+!.env.example
+
+# ===== IDE =====
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# ===== Sistema operativo =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+*.log
+logs/

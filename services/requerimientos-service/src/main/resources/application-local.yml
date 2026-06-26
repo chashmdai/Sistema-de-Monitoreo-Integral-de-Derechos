@@ -1,0 +1,15 @@
+# ============================================================================
+#  Perfil 'local' — desarrollo con trazas verbosas.
+#  Activar con: --spring.profiles.active=local
+# ============================================================================
+spring:
+  jpa:
+    properties:
+      "[hibernate.format_sql]": true
+    show-sql: true
+
+logging:
+  level:
+    "[cl.smid.requerimientos]": DEBUG
+    "[org.springframework.security]": INFO
+    "[org.hibernate.SQL]": DEBUG

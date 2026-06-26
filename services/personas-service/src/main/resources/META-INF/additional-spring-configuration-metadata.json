@@ -1,0 +1,25 @@
+{
+  "properties": [
+    {
+      "name": "smid.eventos.transporte",
+      "type": "java.lang.String",
+      "description": "Transporte usado para publicar eventos de dominio: log o rabbitmq.",
+      "defaultValue": "log"
+    }
+  ],
+  "hints": [
+    {
+      "name": "smid.eventos.transporte",
+      "values": [
+        {
+          "value": "log",
+          "description": "Escribe el evento como JSON en el logger de auditoria."
+        },
+        {
+          "value": "rabbitmq",
+          "description": "Publica el evento en el exchange topic smid.eventos."
+        }
+      ]
+    }
+  ]
+}

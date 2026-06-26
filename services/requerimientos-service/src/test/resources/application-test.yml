@@ -1,0 +1,45 @@
+# ============================================================================
+#  Perfil 'test' — pruebas de integración con Testcontainers (MySQL real).
+#  La datasource y el secreto JWT se inyectan en tiempo de ejecución por
+#  @DynamicPropertySource desde la clase de prueba. Aquí solo van valores fijos.
+# ============================================================================
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate          # Flyway es el dueño del esquema; Hibernate solo valida.
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+smid:
+  # Eventos por log (no se levanta RabbitMQ en las pruebas).
+  eventos:
+    transporte: log
+    exchange: smid.eventos
+
+  # Política de folio (mismo corte que producción).
+  folio:
+    inicio-oficial: 2027-01-01
+
+  # Código de sede por defecto para que el folio sea legible (RM-...).
+  sedes:
+    codigo-por-defecto: RM
+    codigos: {}
+
+  # Verificación de profesional permisiva por defecto (Identidad se simula con un doble).
+  integracion:
+    personas-url: http://localhost:0
+    catalogo-url: http://localhost:0
+    identidad-url: http://localhost:0
+    verificacion-profesional: permisiva
+
+  # Roles de Coordinación (igual que el default de producción).
+  seguridad:
+    roles-coordinacion: COORDINADOR,COORDINACION,ADMIN_SEDE,ADMIN_NACIONAL
+
+logging:
+  level:
+    "[cl.smid.requerimientos]": INFO
+    "[org.testcontainers]": INFO

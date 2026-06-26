@@ -1,0 +1,26 @@
+# =============================================================================
+# Perfil LOCAL — desarrollo en aislamiento (sin Docker ni RabbitMQ)
+# -----------------------------------------------------------------------------
+# Activar con: mvn spring-boot:run -Dspring-boot.run.profiles=local
+#   - Publicación de eventos por log (no requiere RabbitMQ).
+#   - Trazas SQL y logging DEBUG del servicio.
+# Los secretos (DB_PASSWORD, JWT_SECRET) siguen viniendo del entorno.
+# =============================================================================
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/db_instituciones?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&tinyInt1isBit=true&connectionTimeZone=UTC}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+smid:
+  eventos:
+    transporte: log
+
+logging:
+  level:
+    cl.smid.instituciones: DEBUG
+    org.hibernate.SQL: DEBUG
+    AUDIT.SMID.INSTITUCIONES: INFO

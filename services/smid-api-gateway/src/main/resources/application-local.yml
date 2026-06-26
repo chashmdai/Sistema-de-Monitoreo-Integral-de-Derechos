@@ -1,0 +1,20 @@
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    urls:
+      - name: Auth
+        url: /openapi/auth/v3/api-docs
+      - name: Personas
+        url: /openapi/personas/v3/api-docs
+      - name: Requerimientos
+        url: /openapi/requerimientos/v3/api-docs
+      - name: Catalogo
+        url: /openapi/catalogo/v3/api-docs
+      - name: Casos
+        url: /openapi/casos/v3/api-docs
+      - name: Vulneraciones
+        url: /openapi/vulneraciones/v3/api-docs
+      - name: Productos
+        url: /openapi/productos/v3/api-docs

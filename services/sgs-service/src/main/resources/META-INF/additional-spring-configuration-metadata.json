@@ -1,0 +1,132 @@
+{"properties": [
+  {
+    "name": "jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'jwt.secret'"
+  },
+  {
+    "name": "sgs.roles-claim",
+    "type": "java.lang.String",
+    "description": "A description for 'sgs.roles-claim'"
+  },
+  {
+    "name": "sgs.max-candidatas",
+    "type": "java.lang.String",
+    "description": "A description for 'sgs.max-candidatas'"
+  },
+  {
+    "name": "sgs.block-size",
+    "type": "java.lang.String",
+    "description": "A description for 'sgs.block-size'"
+  },
+  {
+    "name": "sgs.min-texto-chars",
+    "type": "java.lang.String",
+    "description": "A description for 'sgs.min-texto-chars'"
+  },
+  {
+    "name": "sgs.confianza-umbral",
+    "type": "java.lang.String",
+    "description": "A description for 'sgs.confianza-umbral'"
+  },
+  {
+    "name": "sgs.alertas.cron",
+    "type": "java.lang.String",
+    "description": "A description for 'sgs.alertas.cron'"
+  },
+  {
+    "name": "openai.api-key",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.api-key'"
+  },
+  {
+    "name": "openai.base-url",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.base-url'"
+  },
+  {
+    "name": "openai.model-extraccion",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.model-extraccion'"
+  },
+  {
+    "name": "openai.model-evaluacion",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.model-evaluacion'"
+  },
+  {
+    "name": "openai.reasoning-effort",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.reasoning-effort'"
+  },
+  {
+    "name": "openai.max-output-tokens",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.max-output-tokens'"
+  },
+  {
+    "name": "openai.timeout-ms",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.timeout-ms'"
+  },
+  {
+    "name": "openai.rubrica-version",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.rubrica-version'"
+  },
+  {
+    "name": "openai.cost-prompt-per1k",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.cost-prompt-per1k'"
+  },
+  {
+    "name": "openai.cost-completion-per1k",
+    "type": "java.lang.String",
+    "description": "A description for 'openai.cost-completion-per1k'"
+  },
+  {
+    "name": "minio.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'minio.enabled'"
+  },
+  {
+    "name": "minio.endpoint",
+    "type": "java.lang.String",
+    "description": "A description for 'minio.endpoint'"
+  },
+  {
+    "name": "minio.access-key",
+    "type": "java.lang.String",
+    "description": "A description for 'minio.access-key'"
+  },
+  {
+    "name": "minio.secret-key",
+    "type": "java.lang.String",
+    "description": "A description for 'minio.secret-key'"
+  },
+  {
+    "name": "minio.bucket",
+    "type": "java.lang.String",
+    "description": "A description for 'minio.bucket'"
+  },
+  {
+    "name": "telegram.enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'telegram.enabled'"
+  },
+  {
+    "name": "telegram.api-base",
+    "type": "java.lang.String",
+    "description": "A description for 'telegram.api-base'"
+  },
+  {
+    "name": "telegram.bot-token",
+    "type": "java.lang.String",
+    "description": "A description for 'telegram.bot-token'"
+  },
+  {
+    "name": "telegram.chat-id",
+    "type": "java.lang.String",
+    "description": "A description for 'telegram.chat-id'"
+  }
+]}

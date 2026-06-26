@@ -1,0 +1,30 @@
+# ===== Compilación Maven =====
+target/
+*.class
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== IDEs =====
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+*.swp
+
+# ===== Sistema operativo =====
+.DS_Store
+Thumbs.db
+
+# ===== Entorno (NUNCA versionar secretos) =====
+.env
+*.env.local
+
+# ===== Otros =====
+*.bak

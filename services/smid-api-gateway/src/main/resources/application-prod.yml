@@ -1,0 +1,28 @@
+# ============================================================================
+# Perfil 'prod' del API Gateway (WebFlux/Netty) — producción.
+# Activar con SPRING_PROFILES_ACTIVE=prod
+# ----------------------------------------------------------------------------
+# No redefine rutas, CORS ni el contrato JWT: todo eso sigue gobernado por la
+# configuración base y por variables de entorno (DT-2/DT-7). Este perfil sólo:
+#   - mantiene Swagger/OpenAPI deshabilitado (el agregador es local/dev),
+#   - silencia las trazas verbosas,
+#   - mantiene Actuator restringido a health/info del propio Gateway.
+# ============================================================================
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: WARN
+    "[cl.smid.apigateway]": INFO
+    "[org.springframework.cloud.gateway]": WARN

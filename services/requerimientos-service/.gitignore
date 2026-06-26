@@ -1,0 +1,26 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# Entorno / secretos
+.env
+*.local
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+.settings/
+.classpath
+.project
+
+# Logs y temporales
+*.log
+*.tmp
+
+# Sistema
+.DS_Store
+Thumbs.db

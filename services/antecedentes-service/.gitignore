@@ -1,0 +1,30 @@
+# Compilados / build
+target/
+build/
+*.class
+
+# Maven
+.mvn/
+!.mvn/wrapper/maven-wrapper.properties
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+logs/
+
+# Variables de entorno (NUNCA commitear secretos reales)
+.env
+.env.local
+
+# SO
+.DS_Store
+Thumbs.db

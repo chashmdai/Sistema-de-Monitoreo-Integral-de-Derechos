@@ -1,0 +1,39 @@
+# ============================================================================
+# Perfil 'prod' — producción. Activar con SPRING_PROFILES_ACTIVE=prod
+# ----------------------------------------------------------------------------
+# Endurece la ejecución frente a la configuración base SIN redefinir secretos
+# ni esquema: todo sigue viniendo de variables de entorno (DT-2) y Flyway sigue
+# siendo el único dueño del esquema (ddl-auto=validate). Este perfil sólo:
+#   - silencia las trazas verbosas y el SQL,
+#   - retira la documentación interactiva (Swagger/OpenAPI) de la superficie,
+#   - mantiene Actuator restringido a health/info.
+# ============================================================================
+
+spring:
+  jpa:
+    open-in-view: false
+    show-sql: false
+    properties:
+      "[hibernate.format_sql]": false
+
+# La documentación interactiva no se publica en producción (reduce superficie).
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Actuator: sólo sondas de salud e info para el orquestador.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    root: WARN
+    # Logs de negocio del ecosistema (todos los paquetes cl.smid.*) y canal de auditoría.
+    "[cl.smid]": INFO
+    "[org.springframework.web]": WARN
+    "[org.hibernate.SQL]": WARN
