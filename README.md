@@ -29,7 +29,8 @@ opera con una herramienta local **sin dependencias** (Python + PowerShell) con d
 10. [Repositorios independientes](#10-repositorios-independientes)
 11. [Documentación por componente](#11-documentación-por-componente)
 12. [Corpus documental legado y normativo](#12-corpus-documental-legado-y-normativo)
-13. [Troubleshooting operativo](#13-troubleshooting-operativo)
+13. [Continuidad operativa](#13-continuidad-operativa)
+14. [Troubleshooting operativo](#14-troubleshooting-operativo)
 
 ---
 
@@ -284,6 +285,7 @@ git diff --check
 | Frontend SMID | [`frontends/smid/README.md`](frontends/smid/README.md) |
 | Identidad visual | [`assets/brand/README.md`](assets/brand/README.md) |
 | Corpus documental | [`docs/README.md`](docs/README.md) |
+| Continuidad operativa | [`docs/CONTINUIDAD_OPERATIVA.md`](docs/CONTINUIDAD_OPERATIVA.md) |
 
 ---
 
@@ -313,7 +315,16 @@ Materiales clave:
 
 ---
 
-## 13. Troubleshooting operativo
+## 13. Continuidad operativa
+
+Para traspaso, onboarding, diagnostico de incidentes y reduccion del bus factor, ver
+[`docs/CONTINUIDAD_OPERATIVA.md`](docs/CONTINUIDAD_OPERATIVA.md). Ese documento conecta el mapa de
+servicios, los comandos del gestor, la seguridad JWT, el E2E, los legados integrados y los cuidados
+antes de push.
+
+---
+
+## 14. Troubleshooting operativo
 
 | Síntoma | Revisión rápida | Corrección típica |
 |---|---|---|
